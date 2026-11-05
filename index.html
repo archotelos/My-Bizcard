@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>My Bizcard</title>
+<meta name="description" content="명함을 찍거나 올리면 자동으로 읽어서 정리하는 나의 명함첩">
+<meta name="theme-color" content="#c8402a">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<style>
+:root{
+  --bg:#f4f2ec; --surface:#ffffff; --surface2:#faf8f4; --ink:#1d1c1a; --muted:#6e6a62; --faint:#a29d93;
+  --line:#e3dfd5; --accent:#c8402a; --accent-ink:#fff; --accent-soft:#fbeae6; --ok:#2f7d4f; --warn:#b7791f;
+  --radius:14px; --shadow:0 1px 2px rgba(30,25,15,.05),0 8px 24px rgba(30,25,15,.07);
+  --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Hiragino Sans","Noto Sans JP","Noto Sans KR","Malgun Gothic","Yu Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#141413;--surface:#1e1d1b;--surface2:#252421;--ink:#efece6;--muted:#a8a399;--faint:#76716a;--line:#34322e;--accent:#e2604a;--accent-soft:#3a221d;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px;padding:22px 0 14px}
+.logo{width:42px;height:42px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.top h1{margin:0;font-size:22px;letter-spacing:-.02em}
+.top .sub{margin:0;color:var(--muted);font-size:13px}
+.top .sp{flex:1}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600;font-size:14px;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn.ghost{background:transparent;border-style:dashed;color:var(--muted)}
+.btn.danger{color:#c62828}
+.btn:disabled{opacity:.5;cursor:default}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:inline-grid;place-items:center;font-size:17px;flex:none}
+.icon-btn.star.on,.star.on{color:#e0a100}
+
+/* drop */
+.drop{border:2px dashed var(--line);border-radius:18px;background:var(--surface);padding:22px;transition:border-color .2s,background .2s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop-inner{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px}
+.drop-text{flex:1 1 320px}
+.drop-text strong{display:block;font-size:16px}
+.drop-text span{color:var(--muted);font-size:13px}
+.drop-btns{display:flex;gap:8px;flex-wrap:wrap}
+.switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none;flex-basis:100%}
+.switch input{width:18px;height:18px;accent-color:var(--accent)}
+
+/* queue */
+.queue{margin-top:12px;display:grid;gap:8px}
+.q-item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.q-item img{width:56px;height:36px;object-fit:cover;border-radius:6px;background:var(--surface2)}
+.q-item .q-t{flex:1;min-width:0;font-size:13px}
+.q-item .q-t b{display:block;font-size:14px}
+.bar{height:4px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:22px 0 8px}
+.toolbar input[type=search]{flex:1 1 240px;min-width:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.toolbar select{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);max-width:170px}
+.chip-toggle{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600}
+.chip-toggle.on{background:#fff4cf;border-color:#e0a100;color:#7a5900}
+@media (prefers-color-scheme:dark){.chip-toggle.on{background:#3a3112;color:#f1cf6b}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.menu{position:relative}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:220px;z-index:20}
+.menu-pop button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px}
+.menu-pop button:hover{background:var(--surface2)}
+.menu-pop hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.count{color:var(--muted);font-size:13px;margin:4px 0 12px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:60px}
+.bc{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;display:flex;flex-direction:column}
+.bc:hover{transform:translateY(-2px)}
+.bc-img{aspect-ratio:91/55;background:var(--surface2);position:relative;overflow:hidden}
+.bc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.bc-badge{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;padding:3px 8px;border-radius:999px}
+.bc-body{padding:10px 12px 12px;min-width:0}
+.bc-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-alt{font-size:12px;color:var(--muted);margin-left:6px;font-weight:500}
+.bc-sub,.bc-co{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-co{color:var(--ink);font-weight:500}
+.bc-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.pill{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+.pill.due{background:var(--accent-soft);border-color:transparent;color:var(--accent);font-weight:600}
+.bc .star,.bc .qmemo{position:absolute;top:8px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.9);cursor:pointer;font-size:15px;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.15);color:#999}
+.bc .star{right:8px}
+.bc .qmemo{right:46px;color:#555}
+.bc .star.on{color:#e0a100}
+.grid.list{grid-template-columns:1fr;gap:8px}
+.grid.list .bc{flex-direction:row;align-items:center}
+.grid.list .bc-img{width:120px;flex:none}
+.grid.list .bc-body{flex:1}
+.grid.list .bc .star,.grid.list .bc .qmemo{top:50%;transform:translateY(-50%)}
+.grid.list .bc-body{padding-right:96px}
+.empty{text-align:center;color:var(--muted);padding:40px 16px 80px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+/* dialogs */
+dialog{border:0;padding:0;background:var(--surface);color:var(--ink);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(20,18,14,.55)}
+dialog.detail{width:min(1120px,96vw);max-height:94vh}
+.d-head{position:sticky;top:0;z-index:5;background:var(--surface);display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.d-title{flex:1;min-width:0}
+.d-title strong{font-size:18px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.saved{font-size:12px;color:var(--ok);height:16px;display:block}
+.d-body{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;padding:16px}
+@media (max-width:860px){
+  dialog.detail{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;margin:0}
+  .d-body{grid-template-columns:1fr;padding:12px}
+}
+.side-tabs{display:flex;gap:6px;margin-bottom:8px}
+.side-tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600}
+.side-tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.media-box{background:var(--surface2);border:1px solid var(--line);border-radius:12px;min-height:180px;display:grid;place-items:center;overflow:hidden}
+.media-box img{width:100%;height:auto;display:block;max-height:60vh;object-fit:contain;cursor:zoom-in}
+.media-box .ph{color:var(--muted);font-size:14px;text-align:center;padding:30px}
+.media-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ocr-state{font-size:13px;color:var(--muted);margin-top:6px;min-height:20px}
+
+.sec{margin-bottom:18px}
+.sec h3{font-size:13px;color:var(--muted);margin:0 0 8px;font-weight:700;letter-spacing:.02em}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+@media (max-width:520px){.fgrid{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld>span{font-size:12px;color:var(--muted)}
+.fld input,.fld textarea,.multi input,.multi select,.meet input,.compose textarea,.tag-in{border:1px solid var(--line);background:var(--surface2);border-radius:9px;padding:8px 10px;width:100%;min-width:0}
+.fld textarea,.compose textarea{resize:vertical}
+.fld input:focus,.fld textarea:focus,.multi input:focus,.compose textarea:focus,.meet input:focus{outline:2px solid var(--accent);outline-offset:-1px;background:var(--surface)}
+.multi{display:grid;gap:6px;margin-bottom:6px}
+.mrow{display:flex;gap:6px;align-items:center}
+.mrow select{width:auto;flex:none}
+.mrow input{flex:1}
+.mrow a,.mrow .x{flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--line);text-decoration:none;background:var(--surface);cursor:pointer;font-size:14px;color:var(--ink)}
+.map-link{justify-content:flex-end}
+.map-link a{font-size:13px}
+
+/* memo */
+.memo-sec{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:14px}
+.memo-sec h3{display:flex;align-items:center;gap:6px}
+.meet{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px;margin-bottom:8px}
+.meet label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px;min-width:0}
+@media (max-width:520px){.meet{grid-template-columns:1fr 1fr}.meet label:nth-child(2){grid-column:1/-1;order:-1}}
+.tags-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.tag{display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 10px;font-size:13px}
+.tag button{border:0;background:transparent;cursor:pointer;color:var(--muted);padding:0 2px}
+.tag-in{width:auto!important;flex:1 1 120px;padding:6px 10px!important;border-radius:999px!important}
+.compose{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+.compose textarea{border:0;background:transparent;padding:6px 4px;min-height:74px}
+.compose textarea:focus{outline:none;background:transparent}
+.memo-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px}
+.memo-chips button{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
+.memo-chips button:hover{border-color:var(--accent);color:var(--accent)}
+.compose-row{display:flex;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+.compose-row input{border:0;background:transparent;color:var(--muted);font-size:12px;padding:4px;max-width:200px}
+.hint{font-size:11px;color:var(--faint)}
+.memo-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.memo-list li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.memo-when{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.memo-when button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;padding:0 3px}
+.memo-when button:hover{color:var(--accent)}
+.memo-text{white-space:pre-wrap;word-break:break-word;margin-top:3px}
+.memo-list textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--surface2);margin-top:4px;min-height:60px}
+
+/* ocr lines */
+.ocr-lines summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:700;padding:6px 0}
+.ocr-lines ol{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px}
+.ocr-lines li{display:flex;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:5px 6px 5px 8px}
+.ocr-lines li.noise{opacity:.55}
+.ocr-lines .lt{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 6px;flex:none;white-space:nowrap}
+.ocr-lines li.noise .lt{color:var(--muted);background:var(--surface)}
+.ocr-lines .tx{flex:1;min-width:0;font-size:13px;word-break:break-all}
+.ocr-lines select{flex:none;max-width:130px;font-size:12px;padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.ocr-help{font-size:12px;color:var(--muted);margin:0 0 6px}
+
+/* small dialogs */
+dialog.small{width:min(520px,94vw)}
+.sd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sd-head strong{font-size:16px}
+.sd-body{padding:14px 16px 18px}
+.set-row{display:flex;flex-wrap:wrap;gap:8px 14px;margin:6px 0 14px}
+.set-row label{display:flex;gap:6px;align-items:center;cursor:pointer;font-size:14px}
+.set-row input{accent-color:var(--accent);width:17px;height:17px}
+.set-note{font-size:12px;color:var(--muted);margin:0 0 12px}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.88);display:grid;place-items:center;z-index:100;cursor:zoom-out}
+.zoom img{max-width:96vw;max-height:94vh}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.drag-veil{position:fixed;inset:0;background:rgba(200,64,42,.12);border:4px dashed var(--accent);z-index:90;display:none;place-items:center;font-size:20px;font-weight:700;color:var(--accent);pointer-events:none}
+.drag-veil.on{display:grid}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">名</div>
+    <div><h1>My Bizcard</h1><p class="sub">명함을 찍거나 올리면 자동으로 읽어서 정리해요</p></div>
+    <div class="sp"></div>
+    <button class="icon-btn" id="btnSettings" title="설정" aria-label="설정">⚙</button>
+  </header>
+
+  <section class="drop" id="drop">
+    <div class="drop-inner">
+      <div class="drop-text">
+        <strong>명함 사진을 끌어다 놓거나 붙여넣기 (Ctrl+V)</strong>
+        <span>여러 장을 한 번에 고르면 차례로 인식해 등록해요. 옆으로 누운 사진도 자동으로 바로 세워요.</span>
+      </div>
+      <div class="drop-btns">
+        <label class="btn primary">📷 촬영<input type="file" accept="image/*" capture="environment" id="inCamera" hidden></label>
+        <label class="btn">🖼 파일 선택<input type="file" accept="image/*" multiple id="inFiles" hidden></label>
+      </div>
+      <label class="switch"><input type="checkbox" id="pairMode"><span>여러 장 올릴 때 <b>2장씩 앞면·뒷면</b>으로 묶기 (1번째=앞면, 2번째=뒷면 …)</span></label>
+    </div>
+  </section>
+
+  <section class="queue" id="queue" hidden></section>
+
+  <section class="toolbar">
+    <input type="search" id="q" placeholder="이름 · 회사 · 전화 · 메모 검색">
+    <select id="sort" aria-label="정렬">
+      <option value="created">최근 등록순</option>
+      <option value="updated">최근 수정순</option>
+      <option value="name">이름순</option>
+      <option value="company">회사순</option>
+      <option value="follow">다음 연락일순</option>
+    </select>
+    <select id="fCompany" aria-label="회사"><option value="">모든 회사</option></select>
+    <select id="fTag" aria-label="태그"><option value="">모든 태그</option></select>
+    <button class="chip-toggle" id="fStar">★ 즐겨찾기</button>
+    <div class="seg" id="viewSeg"><button data-view="grid" class="on">격자</button><button data-view="list">목록</button></div>
+    <div class="menu">
+      <button class="btn" id="btnMore">내보내기 ▾</button>
+      <div class="menu-pop" id="moreMenu" hidden>
+        <button data-exp="vcf">전체 연락처 저장 (vCard .vcf)</button>
+        <button data-exp="csv">엑셀용 CSV</button>
+        <hr>
+        <button data-exp="json">전체 백업 (JSON, 이미지 포함)</button>
+        <button data-exp="import">백업 불러오기</button>
+      </div>
+    </div>
+  </section>
+  <p class="count" id="count"></p>
+  <section class="grid" id="grid"></section>
+  <div class="empty" id="empty" hidden><b>아직 등록된 명함이 없어요</b>위에서 명함 사진을 올려 보세요.</div>
+</div>
+
+<dialog class="detail" id="dlg"></dialog>
+
+<dialog class="small" id="dlgMemo">
+  <div class="sd-head"><strong id="qmTitle">빠른 메모</strong><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+  <div class="sd-body" id="qmBody"></div>
+</dialog>
+
+<dialog class="small" id="dlgSettings">
+  <div class="sd-head"><strong>설정</strong><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+  <div class="sd-body">
+    <h3 style="font-size:14px;margin:0 0 4px">인식할 언어</h3>
+    <p class="set-note">명함에 쓰인 언어만 켜 두면 더 빠르고 정확해요. 언어 데이터는 처음 한 번만 내려받아요.</p>
+    <div class="set-row" id="langRow"></div>
+    <div class="set-row"><label><input type="checkbox" id="setRotate"> 사진 방향 자동으로 바로 세우기</label></div>
+    <h3 style="font-size:14px;margin:8px 0 4px">저장 공간</h3>
+    <p class="set-note" id="storeInfo">명함은 이 기기의 브라우저 안에만 저장돼요. 다른 기기로 옮기거나 보관하려면 내보내기 → 전체 백업을 이용하세요.</p>
+    <div class="set-row"><button class="btn sm danger" id="btnWipe">모든 명함 삭제</button></div>
+  </div>
+</dialog>
+
+<input type="file" id="inImport" accept="application/json,.json" hidden>
+<input type="file" id="inBack" accept="image/*" hidden>
+<input type="file" id="inReplace" accept="image/*" hidden>
+<div class="drag-veil" id="veil">여기에 놓으면 명함이 추가돼요</div>
+<div id="toast" role="status"></div>
+
+<script>
+/*PARSER-START*/
+const Parser = (() => {
+  const K = '\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af';
+  const reHasCJK = new RegExp('[' + K + ']');
+  const reKanji = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+  const reHangul = /[\uac00-\ud7af]/;
+  const EMPTY = { name:'', nameAlt:'', reading:'', company:'', companyAlt:'', department:'', title:'', postal:'', address:'', extra:'' };
+
+  const EMAIL_RE = /[A-Za-z0-9][A-Za-z0-9._%+\-]*@[A-Za-z0-9][A-Za-z0-9.\-]*\.[A-Za-z]{2,}/g;
+  const URL_RE = /(?:https?:\/\/|www\.)[^\s,，、()（）<>"'「」]+|\b[a-z0-9][a-z0-9\-]*(?:\.[a-z0-9\-]+)*\.(?:co\.jp|ne\.jp|or\.jp|ac\.jp|go\.jp|co\.kr|or\.kr|ac\.kr|go\.kr|re\.kr|ne\.kr|com|net|org|jp|kr|cn|tw|io|biz|info)\b(?:\/[^\s]*)?/gi;
+  const PHONE_RE = /\+?\s?\(?\d[\d\s.\-()]{6,}\d/g;
+
+  const TITLES = ('代表取締役社長|代表取締役会長|代表取締役|取締役社長|取締役会長|専務取締役|常務取締役|取締役|代表社員|副社長|社長|副会長|会長|専務|常務|執行役員|監査役|相談役|顧問|参与|理事長|理事|副本部長|本部長|事業部長|部長代理|副部長|部長|次長|課長代理|課長補佐|課長|係長|主任|主査|主事|室長|所長|支店長|店長|工場長|センター長|グループ長|グループリーダー|チームリーダー|リーダー|マネージャー|マネジャー|チーフ|担当|技師|研究員|准教授|教授|講師|代表' +
+    '|대표이사|대표|부회장|회장|부사장|사장|전무이사|전무|상무이사|상무|이사|감사|고문|본부장|사업부장|실장|부장|차장|과장|대리|주임|사원|팀장|파트장|그룹장|센터장|소장|원장|단장|처장|국장|책임연구원|선임연구원|수석연구원|연구원|수석|책임|선임|매니저|특임교수|겸임교수|초빙교수|명예교수|연구교수|부교수|조교수|교수|강사|박사|위원장|위원|간사|총장|학장|변호사|변리사|세무사|회계사|건축사|기술사')
+    .split('|').sort((a, b) => b.length - a.length);
+  const DEPT_SUFFIX = /(部門|事業部|本部|部|課|室|グループ|チーム|センター|支店|支社|営業所|工場|係|班|ユニット|オフィス|局|科|본부|사업부|사업단|추진단|연구소|연구실|센터|부서|팀|부|실|과|처|국|단|학과|학부|대학원|지점|지사|사무소|영업소|그룹|Div\.?|Dept\.?|Group|Team|Section|Sect\.?)$/i;
+  const DEPT_MULTI = /(部門|事業部|本部|グループ|チーム|センター|支店|支社|営業所|工場|ユニット|オフィス|본부|사업부|사업단|추진단|연구소|연구실|센터|부서|학과|학부|대학원|지점|지사|사무소|영업소|그룹)$/;
+
+  const TITLE_EN_RE = /\b(CEO|CTO|CFO|COO|CIO|CMO|President|Vice President|VP|Chairman|Chairperson|Managing Director|Director|General Manager|Manager|Deputy|Chief|Head|Leader|Senior|Engineer|Specialist|Officer|Executive|Supervisor|Coordinator|Assistant|Representative|Consultant|Professor|Advisor|Adviser|Partner|Owner|Founder|Staff|Associate|Analyst|Designer|Developer|Researcher|Scientist|Architect|Secretary|Administrator|Buyer|Planner|Technician|Attorney|Lawyer|Dr\.?)\b/i;
+  const UNIT_EN_RE = /\b(Department|Deparment|Dept\.?|Division|Div\.?|Section|Sect\.?|Team|Group|Unit|Office|Center|Centre|Branch|Bureau|Laboratory|Lab|Headquarters)(?=\W|$)/gi;
+  const DEPT_EN_RE = /\b(Department|Deparment|Dept|Division|Div|Section|Sect|Team|Group|Unit|Office|Center|Centre|Branch|Bureau|Laboratory|Headquarters|Sales|Marketing|Purchasing|Procurement|Planning|Engineering|Production|Quality|R&D|Overseas|International|Global|Domestic|Export|Import|Accounting|Finance|Human Resources|Administration|General Affairs|Legal|Operations|Logistics|Development|Business|Products?|Manufacturing|Control|Brand|Research)\b/i;
+
+  const CO_CJK = /(株式会社|\(株\)|有限会社|合同会社|合資会社|社団法人|財団法人|学校法人|医療法人|行政法人|製作所|工業所?|商事|産業|物産|商会|電機|化学|建設|工務店|製薬|銀行|証券|信用金庫|研究所|大学|주식회사|\(주\)|유한회사|대학교|협회|재단|공사|공단|병원|은행|조합)/;
+  const CO_EN = /\b(Co\.?\s*,?\s*Ltd|Corporation|Corp|Incorporated|Inc|LLC|Ltd|Limited|Company|GmbH|PLC|Pte|Holdings|Industries|Industrial|University|Institute|Works|Bank|Hospital)\b\.?/i;
+  const CO_STRONG = /(株式会社|\(株\)|有限会社|合同会社|法人|주식회사|\(주\)|유한회사|대학교|Co\.?\s*,?\s*Ltd|Corporation|\bCorp\b|\bInc\b|LLC|\bLtd\b|Limited|GmbH|University)/i;
+  const DEPT_END = /(部|課|室|グループ|チーム|センター|本部|部門|팀|본부|센터|Department|Deparment|Dept\.?|Division|Div\.?|Section|Sect\.?|Team|Group)\s*$/i;
+
+  const NOISE_RE = /\bISO\s?\d{3,5}|ISO\d{4}|ACCREDIT|ASSURANCE|CERTIFI|REGISTERED|ORGANIZATION|\bJPX\b|\bTSE\b|東証|上場|PRIVACY|プライバシー|たいせつにします|\bANAB\b|\bEQA\b|\bJAB\b|\bJIC\b|健康経営|KENKO|^No\.\s?[A-Z]?\d/i;
+  const KO_SURNAME = /^(김|이|박|최|정|강|조|윤|장|임|한|오|서|신|권|황|안|송|류|유|전|홍|고|문|양|손|배|백|허|남|심|노|하|곽|성|차|주|우|구|민|진|나|지|엄|채|원|천|방|공|현|함|변|염|여|추|도|소|석|선|설|마|길|연|위|표|명|기|반|왕|금|옥|육|인|맹|제|모|탁|국|어|은|편|용|예|경|봉|사|부|빈|라|태|목|형|피|감|음|두|호|계|복|당|승|묵)/;
+  const STOPWORDS = /\b(for|of|the|and|with|to|in|on|your|our|at|by)\b/;
+
+  const digits = s => s.replace(/\D/g, '');
+  const famOf = s => (/[A-Za-z]/.test(s) && !reHasCJK.test(s)) ? 'lat' : 'cjk';
+
+  function collapseSpacedLetters(s) {
+    const toks = s.trim().split(/\s+/);
+    if (toks.length >= 4 && toks.every(t => /^[A-Za-z]$/.test(t))) {
+      return s.trim().split(/\s{2,}/).map(w => w.replace(/\s+/g, '')).join(' ');
+    }
+    return s;
+  }
+  function joinSingleCJK(s) {
+    const toks = s.split(/ +/).filter(Boolean);
+    const out = []; let run = false;
+    for (const t of toks) {
+      const single = t.length === 1 && reHasCJK.test(t);
+      if (single && run) out[out.length - 1] += t; else out.push(t);
+      run = single;
+    }
+    return out.join(' ');
+  }
+  function norm(s) {
+    s = String(s || '').normalize('NFKC').replace(/[\u200b\ufeff]/g, '').replace(/\t/g, ' ');
+    s = collapseSpacedLetters(s);
+    s = s.replace(/(\d)\s*[‐‑‒–—―−ー一－~〜\-]+\s*(?=[\d(])/g, '$1-');
+    s = s.replace(/((?:@|https?:\/\/|www\.)[\w.\-]+)\s+(jp|com|net|org|kr|cn)\b/gi, '$1.$2');
+    s = s.replace(/[ᅮᅲ〶]\s?(?=\d{3}\s?-?\s?\d{4})/g, '〒');
+    s = s.replace(/\)\s*[‐‑‒–—―−ー一－]\s*(?=\d)/g, ')-');
+    s = s.replace(/\s*@\s*/g, '@');
+    s = s.replace(/([A-Za-z0-9])\s*\.\s+(?=(?:com|co|jp|kr|net|org|ne|or|ac|go)\b)/gi, '$1.');
+    s = s.replace(/株\s*式\s*会\s*社/g, '株式会社');
+    s = joinSingleCJK(s);
+    if (/[都道府県市区町村丁目番号]/.test(s) && /\d/.test(s)) s = s.replace(/(\d)\.(\d{1,3}-\d)/g, '$1-$2').replace(/(\d-\d{1,3})\.(\d{1,3})(?!\d)/g, '$1-$2').replace(new RegExp('([' + K + '])\\s+(?=[' + K + '0-9])', 'g'), '$1');
+    return s.trim();
+  }
+
+  function phoneType(label, num) {
+    const L = label.trim();
+    if (/(fax|ファックス|ファクス|팩스)\S*\s*[.:]?\s*$|(^|\s)F\s*[.:]?\s*$/i.test(L)) return 'fax';
+    if (/(mobile|mob|cell|携帯|ケータイ|휴대|핸드폰|hp|h\.p|c\.p)\S*\s*[.:]?\s*$|(^|\s)M\s*[.:]?\s*$/i.test(L)) return 'mobile';
+    if (/(tel|phone|電話|☎|전화|direct|直通|代表)\S*\s*[.:]?\s*$|(^|\s)T\s*[.:]?\s*$/i.test(L)) return 'tel';
+    const d = digits(num);
+    if (/^01[016789]\d{7,8}$/.test(d) || /^821[016789]/.test(d)) return 'mobile';
+    if (/^0[789]0\d{8}$/.test(d) || /^81[789]0/.test(d)) return 'mobile';
+    return 'tel';
+  }
+  function splitPhoneRun(s) {
+    const t = s.trim();
+    if (digits(t).length <= 15) return [t];
+    const out = []; let cur = '';
+    for (const tk of t.split(/\s+/)) {
+      const nx = cur ? cur + ' ' + tk : tk;
+      if (cur && (digits(nx).length > 15 || (digits(cur).length >= 9 && /^[+(0]/.test(tk)))) { out.push(cur); cur = tk; }
+      else cur = nx;
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
+  function extractPhones(str) {
+    const items = []; let rest = ''; let last = 0; let m;
+    const re = new RegExp(PHONE_RE.source, 'g');
+    while ((m = re.exec(str))) {
+      let cursor = m.index;
+      for (const p of splitPhoneRun(m[0])) {
+        const pos = str.indexOf(p, cursor); if (pos < 0) continue;
+        const dd = digits(p);
+        if (dd.length >= 9 && dd.length <= 15) {
+          const label = str.slice(last, pos);
+          let v = p.replace(/\s+/g, ' ').replace(/[-.\s]+$/, '').trim();
+          const fix = v.match(/^\d{1,2}(0\d{1,3}-\d{3,4}-\d{4})$/); if (fix) v = fix[1];
+          items.push({ type: phoneType(label, v), value: v });
+          rest += label + ' '; last = pos + p.length;
+        }
+        cursor = pos + p.length;
+      }
+    }
+    rest += str.slice(last);
+    return { items, rest };
+  }
+  function stripLabels(s) {
+    return s.replace(/(?:^|\s)(?:TEL|Tel|tel|FAX|Fax|fax|PHONE|Phone|E-?mail|E-?MAIL|e-?mail|MAIL|Mail|mail|URL|Url|Web|WEB|HP|Mobile|MOBILE|Mob|Cell|携帯電話|携帯|電話|直通|ファックス|휴대폰|핸드폰|전화|팩스|이메일|홈페이지|[MTFE])\s*[.:]?(?=\s|$)/g, ' ')
+      .replace(/^[\s:;,.\-\/|·・()]+|[\s:;,.\-\/|·・(]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+  }
+  function isNoise(r, l) {
+    const core = r.replace(/[^\p{L}\p{N}]/gu, '');
+    if (core.length < 2) return true;
+    if (/^[\dIl|O]{1,8}$/.test(core)) return true;
+    if (NOISE_RE.test(r)) return true;
+    const c = l.conf ?? 80;
+    if (c < 35) return true;
+    if (core.length <= 3 && c < 55) return true;
+    return false;
+  }
+  function addrScore(r) {
+    let s = 0;
+    if (/[都道府県]/.test(r) && /[市区郡町村]/.test(r)) s += 2;
+    if (/(市|区|郡|町|村)/.test(r)) s += 1;
+    if (/\d+\s*(丁目|番地|番|号)/.test(r) || /丁目/.test(r)) s += 2;
+    if (/(ビル|タワー|階|\d+F\b|Bldg|Building|Tower|Floor|Suite)/i.test(r)) s += 1;
+    if (/\d+(st|nd|rd|th)\s+Fl/i.test(r)) s += 1;
+    if (/\d+-\d+/.test(r)) s += 1;
+    if (/(특별시|광역시|특별자치|[가-힣]+도\s|[가-힣]+시\s|[가-힣]+구\s|[가-힣]+군\s|[가-힣]+(로|길)\s*\d)/.test(r)) s += 2;
+    if (/\d+\s*호|\d+층/.test(r)) s += 1;
+    if (/\b(Japan|Korea|China|-ku|-shi|-cho|-machi|City|Prefecture|Street|St\.|Road|Rd\.|Ave|Avenue|CHOME|Osaka|Tokyo|Kyoto|Seoul|Nagoya|Yokohama|Busan|Kobe|Fukuoka)\b/i.test(r)) s += 2;
+    if (/(大阪|東京|京都|愛知|兵庫|名古屋|横浜|福岡|北海道|神奈川|埼玉|千葉|広島|静岡)/.test(r)) s += 1;
+    if (/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충청|충북|충남|전라|전북|전남|경상|경북|경남|제주)/.test(r)) s += 1;
+    return s;
+  }
+  function isCompany(r) {
+    return (CO_CJK.test(r) || CO_EN.test(r)) && (CO_STRONG.test(r) || !DEPT_END.test(r)) && r.length <= 60;
+  }
+  const EXEC = ['代表取締役社長', '代表取締役', '取締役', '執行役員', '常務', '専務', '監査役'];
+  function tokRole(t) {
+    for (const k of TITLES) if (t === k) return { role: 'title' };
+    for (const e of EXEC) if (t.length > e.length + 1 && t.startsWith(e)) { const r2 = tokRole(t.slice(e.length)); if (r2.split) return { split: [r2.split[0], e + ' ' + r2.split[1]] }; if (r2.role) return { split: [t.slice(e.length), e] }; }
+    for (const k of TITLES) {
+      if (t.length > k.length && t.endsWith(k)) {
+        const pre = t.slice(0, -k.length);
+        if (DEPT_SUFFIX.test(pre)) return { split: [pre, k] };
+        if (/^(部|課|室|所|店|局)長$/.test(k) && reHasCJK.test(pre) && pre.length <= 8) return { split: [pre + k[0], t] };
+        if (t.length <= k.length + 6) return { role: 'title' };
+      }
+    }
+    for (const k of TITLES) if (t.startsWith(k) && /^[(（]/.test(t.slice(k.length))) return { role: 'title' };
+    if (DEPT_SUFFIX.test(t)) return { role: 'department' };
+    return {};
+  }
+  function roleCJK(r) {
+    let toks = r.split(/[\s\/／,、]+/).filter(Boolean);
+    {
+      const roles = toks.map(t => { const tr = tokRole(t); return tr.split ? 'split' : tr.role || null; });
+      const plainNameLike = t => /^[가-힣]{2,4}$/.test(t) || /^[\u3400-\u9fff]{1,4}$/.test(t) && toks.length <= 2;
+      if (roles.some(Boolean) && roles.some(x => !x) && toks.every((t, i) => roles[i] || (!plainNameLike(t) && reHasCJK.test(t)))) {
+        const out = []; let buf = [];
+        toks.forEach((t, i) => { if (!roles[i]) buf.push(t); else { out.push(buf.length ? buf.join(' ') + ' ' + t : t); buf = []; } });
+        if (buf.length) out[out.length - 1] += ' ' + buf.join(' ');
+        const res = { title: [], department: [], other: [], ambiguous: false };
+        out.forEach(t => { const last = t.split(' ').pop(), tr = tokRole(last);
+          if (tr.split) { res.department.push(t.slice(0, -tr.split[1].length).trim() || tr.split[0]); res.title.push(tr.split[1]); }
+          else res[tr.role || 'other'].push(t); });
+        return res;
+      }
+    }
+    const res = { title: [], department: [], other: [], ambiguous: false };
+    let prev = null;
+    for (const t of toks) {
+      if (/^[(（\[]/.test(t) && prev && res[prev].length) { res[prev][res[prev].length - 1] += t; continue; }
+      const tr = tokRole(t);
+      if (tr.split) { res.department.push(tr.split[0]); res.title.push(tr.split[1]); prev = 'title'; }
+      else if (tr.role) { res[tr.role].push(t); prev = tr.role; }
+      else { res.other.push(t); prev = 'other'; }
+    }
+    if (toks.length === 1 && res.department.length === 1 && toks[0].length <= 2 && !DEPT_MULTI.test(toks[0])) res.ambiguous = true;
+    return res;
+  }
+  function roleEN(r) {
+    const res = { title: [], department: [], other: [], ambiguous: false };
+    if (TITLE_EN_RE.test(r)) {
+      let lastEnd = -1, m; const re = new RegExp(UNIT_EN_RE.source, 'gi');
+      while ((m = re.exec(r))) lastEnd = m.index + m[0].length;
+      if (lastEnd > 0 && lastEnd < r.length - 2) {
+        const d = r.slice(0, lastEnd).replace(/[,\s]+$/, ''), t = r.slice(lastEnd).replace(/^[,\s]+/, '');
+        if (TITLE_EN_RE.test(t)) { res.department.push(d); res.title.push(t); return res; }
+      }
+      if (lastEnd > 0 && r.includes(',')) {
+        const i = r.indexOf(','); res.title.push(r.slice(0, i).trim()); res.department.push(r.slice(i + 1).trim()); return res;
+      }
+      if (lastEnd > 0) { res.department.push(r); return res; }
+      res.title.push(r); return res;
+    }
+    if (DEPT_EN_RE.test(r)) { res.department.push(r); return res; }
+    res.other.push(r); return res;
+  }
+  function roleSplit(r) {
+    return (/[A-Za-z]{2,}/.test(r) && !reHasCJK.test(r)) ? roleEN(r) : roleCJK(r);
+  }
+  function nameInfo(r) {
+    const s = r.replace(/\s+/g, ' ').trim(), ns = s.replace(/\s/g, '');
+    if (reHasCJK.test(s)) { const rs = roleCJK(s); if (rs.title.length || (rs.department.length && !rs.ambiguous) || CO_CJK.test(ns)) return null; }
+    if (/^[가-힣]{2,4}$/.test(ns)) return { type: 'cjk', fam: 'cjk', s: ns, bonus: (KO_SURNAME.test(ns) && ns.length >= 2 && ns.length <= 4 ? 1.2 : 0.2) + (/\s/.test(s) && ns.length === 3 ? 0.3 : 0) };
+    if (/^[\u3400-\u9fff\uf900-\ufaff々〆ヶ]{2,6}$/.test(ns)) return { type: 'cjk', fam: 'cjk', s, bonus: 1.2 };
+    if (/^[\u3400-\u9fff\uf900-\ufaff々〆ヶぁ-んァ-ヶー]{2,8}$/.test(ns) && reKanji.test(ns)) return { type: 'cjk', fam: 'cjk', s, bonus: 0.8 };
+    if (/^[ァ-ヶーぁ-ん・ ]{2,16}$/.test(s)) return { type: 'kana', fam: 'cjk', s, bonus: -0.8 };
+    let w = s.replace(/^[^A-Za-z]+/, '').split(' ').filter(Boolean);
+    while (w.length > 2 && /^[a-z]{1,4}$|^[A-Za-z]$|^[^A-Za-z]+$/.test(w[0]) && /^[A-Z]/.test(w[1])) w = w.slice(1);
+    const ss = w.join(' ');
+    const wordOK = x => /^[A-Z][a-z'\-]+$|^[A-Z]{2,}$|^[A-Z]\.?$|^(Mc|Mac|O')[A-Z][a-z]+$/.test(x);
+    if (w.length >= 2 && w.length <= 4 && ss.length <= 40 && w.every(wordOK) && w.filter(x => x.replace(/\W/g, '').length >= 2).length >= 2 &&
+        !STOPWORDS.test(ss) && !TITLE_EN_RE.test(ss) && !DEPT_EN_RE.test(ss) && !CO_EN.test(ss))
+      return { type: 'lat', fam: 'lat', s: ss, bonus: 0.7 };
+    return null;
+  }
+  function domainRoots(emails, urls) {
+    const roots = new Set();
+    const add = host => { host = host.toLowerCase().replace(/^www\./, ''); const r = host.split('.')[0].replace(/[^a-z0-9]/g, ''); if (r.length >= 3) roots.add(r); };
+    emails.forEach(e => add(e.split('@')[1] || ''));
+    urls.forEach(u => add(u.replace(/^https?:\/\//i, '').split('/')[0]));
+    return [...roots];
+  }
+  const pushU = (arr, v) => { if (v && !arr.some(x => x.toLowerCase() === v.toLowerCase())) arr.push(v); };
+
+  function parse(raw) {
+    const lines = (raw || []).map((l, i) => ({ i, text: norm(l.text), conf: l.conf ?? 80, h: l.h || 20, tags: [] })).filter(l => l.text);
+    const hs = lines.map(l => l.h).sort((a, b) => a - b);
+    const medH = hs.length ? hs[Math.floor(hs.length / 2)] : 20;
+    const F = { ...EMPTY };
+    const phones = [], emails = [], urls = [];
+    const dept = { cjk: [], lat: [] }, title = { cjk: [], lat: [] };
+    const addrSet = new Map();
+    const cands = [], extras = [];
+    let pendingPostal = null, pendingCo = null, pendingCoIdx = -9;
+
+    const setPostal = v => { if (!F.postal) F.postal = v; };
+    const setCompany = (v, l) => {
+      v = v.trim().replace(/^[^\p{L}\p{N}(（]+/u, '').replace(/^[(（][^\p{L}]*[)）]\s*/u, '').replace(/^[a-z]{1,3}\s+(?=[\u3400-\u9fff\u30a0-\u30ff])/, '').replace(/[_|]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      v = v.replace(/^[〇○●◎©®\d\s]+(?=[\u3400-\u9fff\u30a0-\u30ff])/, '');
+      if (!v) return;
+      if (pendingCo && !/(株式会社|\(株\)|有限会社|合同会社)/.test(v)) v = pendingCo + v;
+      v = v.replace(/(株式会社|有限会社|\(株\))\s*[〇○●◎©®\d\s]+(?=[\u3400-\u9fff\u30a0-\u30ff])/, '$1');
+      pendingCo = null;
+      if (!F.company) F.company = v;
+      else if (F.company.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(F.company.toLowerCase()) && famOf(v) === famOf(F.company)) { if (v.length > F.company.length) F.company = v; }
+      else if (!F.companyAlt) F.companyAlt = v;
+      else if (!F.companyAlt.toLowerCase().includes(v.toLowerCase())) extras.push(v);
+      l.tags.push('company');
+    };
+    const pushRole = (bucket, parts) => parts.forEach(p => { p = p.trim(); if (p) bucket[famOf(p)].push(p); });
+
+    // script filter: drop the minority CJK script (OCR artefacts of the other-language model)
+    const allTxt = lines.map(l => l.text).join('');
+    const nHangul = (allTxt.match(/[\uac00-\ud7af]/g) || []).length, nJa = (allTxt.match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+    const dropHangul = nJa >= 10 && nHangul <= Math.max(6, nJa * 0.25), dropKana = nHangul >= 10 && nJa <= Math.max(6, nHangul * 0.25);
+    lines.forEach((l, idx) => {
+      let r = l.text, contact = false;
+      if (dropHangul && /[\uac00-\ud7af]/.test(r)) { r = r.replace(/[\uac00-\ud7af]+/g, ' ').trim(); if (!/[\p{L}\p{N}]{2,}/u.test(r)) { l.tags.push('noise'); return; } }
+      if (dropKana && /[\u3040-\u30ff\u3400-\u9fff]/.test(r) && !/[\uac00-\ud7af]/.test(r)) { l.tags.push('noise'); return; }
+      if (NOISE_RE.test(r) && !/@|https?:|www\.|TEL|FAX|電話|Mobile|携帯|전화|휴대/i.test(r)) { l.tags.push('noise'); return; }
+      r = r.replace(EMAIL_RE, m => { pushU(emails, m.replace(/\.+$/, '')); contact = true; l.tags.push('email'); return ' '; });
+      r = r.replace(URL_RE, m => { const u = m.replace(/[.,;:)\]]+$/, ''); if (u.length < 5) return m; pushU(urls, u); contact = true; l.tags.push('url'); return ' '; });
+      const ph = extractPhones(r);
+      if (ph.items.length) {
+        ph.items.forEach(p => { if (!phones.some(x => digits(x.value) === digits(p.value))) phones.push(p); });
+        r = ph.rest; contact = true; l.tags.push('phone');
+      }
+      let m;
+      if (pendingPostal && (m = r.match(/^\s*[-‐]?\s*(\d{4})(?=\s|$)/))) { setPostal(pendingPostal + '-' + m[1]); pendingPostal = null; r = r.replace(m[0], ' '); contact = true; l.tags.push('postal'); }
+      const mFull = r.match(/〒\s*(\d{3})\s*-?\s*(\d{4})(?!\d)/) || r.match(/^\s*[T干テ丁⊤]\s?(\d{3})-(\d{4})(?!\d)/) || r.match(/^\s*(\d{3}-\d{4})(?=\s*$|\s+[^\x00-\x7f])/);
+      if (mFull) { setPostal(mFull[2] ? mFull[1] + '-' + mFull[2] : mFull[1]); r = r.replace(mFull[0], ' '); contact = true; l.tags.push('postal'); }
+      else { const mp = r.match(/〒\s*(\d{3})(?![\d-])/) || r.match(/^\s*[T干テ丁⊤]\s?(\d{3})(?=\s*[\u3400-\u9fff])/); if (mp) { pendingPostal = mp[1]; r = r.replace(mp[0], ' '); l.tags.push('postal'); } }
+      const mk = r.match(/^\s*(?:\(우\)|우\)|우편번호\s*:?)?\s*(\d{5})(?=\s+\S*[가-힣])/);
+      if (mk) { setPostal(mk[1]); r = r.replace(mk[0], ' '); l.tags.push('postal'); }
+
+      r = contact ? stripLabels(r) : r.replace(/\s{2,}/g, ' ').trim();
+      if (contact && !r.replace(/[()（）\[\]\s,\/]|ENGLISH|JAPANESE|KOREAN|ENG|JPN|KOR|EN|JP|KR/gi, '')) return;
+      if (!r || !/[\p{L}\p{N}]/u.test(r)) return;
+      if (isNoise(r, l)) { l.tags.push('noise'); return; }
+
+      if (pendingCo && idx - pendingCoIdx > 2) pendingCo = null;
+      if (/^(株式会社|\(株\)|株式|会社)$/.test(r)) { pendingCo = r === '(株)' ? '(株)' : '株式会社'; pendingCoIdx = idx; l.tags.push('company'); return; }
+      const frag = r.match(/^(株式|会社)\s+(?=\S)/);
+      if (frag && !/^株式会社/.test(r)) { pendingCo = '株式会社'; pendingCoIdx = idx; r = r.slice(frag[0].length); }
+
+      const as = addrScore(r); l.addr = as;
+      if (as >= 3) {
+        addrSet.set(idx, r); l.tags.push('address');
+        const ep = r.match(/\b(\d{3}-\d{4})\b/); if (ep && /japan/i.test(r)) setPostal(ep[1]);
+        return;
+      }
+      if (isCompany(r)) { setCompany(r, l); return; }
+      const role = roleSplit(r);
+      const hasRole = role.title.length || role.department.length;
+      if (hasRole && !role.other.length) {
+        if (role.ambiguous) { l.rest = r; l.ambDept = true; cands.push(l); return; }
+        pushRole(dept, role.department); pushRole(title, role.title);
+        if (role.department.length) l.tags.push('department');
+        if (role.title.length) l.tags.push('title');
+        return;
+      }
+      if (role.title.length && role.other.length) {
+        pushRole(dept, role.department); pushRole(title, role.title);
+        l.tags.push('title'); l.rest = role.other.join(' '); cands.push(l); return;
+      }
+      if (pendingCo && r.length <= 30 && !/[@\d]{3,}/.test(r) && !nameInfo(r)) { setCompany(r, l); return; }
+      l.rest = r; cands.push(l);
+    });
+
+    // address continuation (adjacent lines)
+    for (let pass = 0; pass < 2; pass++) {
+      for (const l of cands) {
+        if (l.used) continue;
+        const idx = lines.indexOf(l);
+        const adj = addrSet.has(idx - 1) || addrSet.has(idx + 1);
+        if (adj && ((l.addr || 0) >= 2 || ((l.addr || 0) >= 1 && /\d/.test(l.rest)))) {
+          addrSet.set(idx, l.rest); l.used = true; l.tags.push('address');
+          const ep = l.rest.match(/\b(\d{3}-\d{4})\b/); if (ep && /japan/i.test(l.rest)) setPostal(ep[1]);
+        }
+      }
+    }
+
+    // names
+    const roots = domainRoots(emails, urls);
+    const sq = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const scored = cands.filter(l => !l.used).map(l => {
+      const info = nameInfo(l.rest);
+      if (info && info.type === 'lat' && roots.some(rt => sq(info.s).length >= 3 && (rt.includes(sq(info.s)) || sq(info.s).includes(rt)))) return null;
+      return info ? { l, info, score: (l.h / medH) * 1.5 + info.bonus + (l.conf / 200) } : null;
+    }).filter(Boolean).sort((a, b) => b.score - a.score);
+    const primary = scored.filter(x => x.info.type !== 'kana');
+    let nameX = primary[0] || null;
+    if (!nameX && scored[0] && scored[0].l.h >= medH * 1.3) nameX = scored[0];
+    if (nameX) {
+      F.name = nameX.info.s; nameX.l.used = true; nameX.l.tags.push('name');
+      const alt = primary.find(x => !x.l.used && x.info.fam !== nameX.info.fam && x.score >= 1.2)
+        || (reHangul.test(nameX.info.s) && primary.find(x => !x.l.used && reHangul.test(x.info.s) && x.l.h >= nameX.l.h * 0.85 && KO_SURNAME.test(x.info.s)));
+      if (alt) { F.nameAlt = alt.info.s; alt.l.used = true; alt.l.tags.push('nameAlt'); }
+      const rd = reKanji.test(nameX.info.s) && scored.find(x => !x.l.used && x.info.type === 'kana' && x.l.h < nameX.l.h * 0.8);
+      if (rd) { F.reading = rd.info.s; rd.l.used = true; rd.l.tags.push('reading'); }
+    }
+
+    // leftovers: ambiguous depts, logo company, extra
+    for (const l of cands) {
+      if (l.used) continue;
+      if (l.ambDept) { pushRole(dept, [l.rest]); l.used = true; l.tags.push('department'); continue; }
+      const w = l.rest.trim();
+      if (/^[A-Za-z][A-Za-z0-9&\-]{2,}$/.test(w)) {
+        const lw = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const hit = roots.some(rt => rt.startsWith(lw) || lw.startsWith(rt));
+        const dup = (F.company + ' ' + F.companyAlt).toLowerCase().includes(lw);
+        if (dup) { l.used = true; l.tags.push('company'); continue; }
+        if (hit) {
+          if (!F.company) F.company = w;
+          else if (!F.companyAlt) F.companyAlt = w;
+          else extras.push(w);
+          l.used = true; l.tags.push('company'); continue;
+        }
+      }
+      if (pendingCo && !F.company) { setCompany(w, l); l.used = true; continue; }
+      extras.push(w); l.used = true; l.tags.push('extra');
+    }
+
+    // assemble
+    const groups = []; let cur = null;
+    [...addrSet.keys()].sort((a, b) => a - b).forEach(i => {
+      if (cur && i === cur.last + 1) { cur.parts.push(addrSet.get(i)); cur.last = i; }
+      else { cur = { last: i, parts: [addrSet.get(i)] }; groups.push(cur); }
+    });
+    F.address = groups.map(g => g.parts.join(' ').replace(/\s{2,}/g, ' ').replace(/,\s*$/, '')).join('\n');
+    if (pendingPostal && !F.postal) F.postal = pendingPostal;
+    F.department = [dept.cjk.join(' '), dept.lat.join(' / ')].filter(Boolean).join('\n');
+    F.title = [title.cjk.join(' '), title.lat.join(', ')].filter(Boolean).join('\n');
+    F.extra = extras.filter(Boolean).join('\n');
+    if (!F.company && pendingCo) F.company = pendingCo;
+
+    return {
+      fields: F, phones, emails, urls,
+      lines: lines.map(l => ({ text: l.text, conf: Math.round(l.conf), tags: [...new Set(l.tags)] }))
+    };
+  }
+
+  function scriptOf(s) {
+    if (reHangul.test(s)) return 'ko';
+    if (reHasCJK.test(s)) return 'ja';
+    return 'en';
+  }
+  return { parse, norm, digits, scriptOf, EMPTY };
+})();
+if (typeof module !== 'undefined') module.exports = Parser;
+/*PARSER-END*/
+</script>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+const fmtDT = t => { const d = new Date(t); return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} (${WD[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const toLocalInput = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+const FIELD_LABEL = { name: '이름', nameAlt: '다른 표기', reading: '읽는 법', company: '회사', companyAlt: '회사(다른 표기)', department: '부서', title: '직함', postal: '우편번호', address: '주소', extra: '기타', phone: '전화', email: '이메일', url: '웹', noise: '무시됨', mobile: '휴대폰', tel: '전화', fax: '팩스' };
+const PHONE_TYPES = { mobile: '휴대폰', tel: '전화', fax: '팩스', other: '기타' };
+const LANGS = [['kor', '한국어'], ['jpn', '日本語'], ['eng', 'English'], ['chi_sim', '中文(简体)'], ['chi_tra', '中文(繁體)']];
+
+/* ---------- settings ---------- */
+const settings = Object.assign({ langs: ['kor', 'jpn', 'eng'], autoRotate: true, view: 'grid', sort: 'created' },
+  (() => { try { return JSON.parse(localStorage.getItem('mybizcard.settings') || '{}'); } catch { return {}; } })());
+const saveSettings = () => { try { localStorage.setItem('mybizcard.settings', JSON.stringify(settings)); } catch {} };
+
+/* ---------- storage ---------- */
+const DB = (() => {
+  let db;
+  const p = req => new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  return {
+    open: () => new Promise((res, rej) => {
+      if (!window.indexedDB) return rej(new Error('no indexedDB'));
+      const r = indexedDB.open('my-bizcard', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('cards', { keyPath: 'id' });
+      r.onsuccess = () => { db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    }),
+    all: () => p(db.transaction('cards').objectStore('cards').getAll()),
+    put: c => p(db.transaction('cards', 'readwrite').objectStore('cards').put(c)),
+    del: id => p(db.transaction('cards', 'readwrite').objectStore('cards').delete(id)),
+    clear: () => p(db.transaction('cards', 'readwrite').objectStore('cards').clear()),
+  };
+})();
+
+let cards = [];
+const progress = {};
+const newCard = () => ({
+  id: uid(), createdAt: Date.now(), updatedAt: Date.now(), status: 'pending', starred: false,
+  f: { ...Parser.EMPTY }, phones: [], emails: [], urls: [], tags: [],
+  metDate: todayISO(), metPlace: '', followUp: '', memos: [], ocr: null, front: null, back: null, thumb: ''
+});
+
+function toast(msg, ms = 2600) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ---------- image helpers ---------- */
+function loadImage(blob) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(blob); const im = new Image();
+    im.onload = () => { res(im); setTimeout(() => URL.revokeObjectURL(url), 2000); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('이미지를 열 수 없어요 (HEIC라면 JPG로 바꿔 올려 주세요)')); };
+    im.src = url;
+  });
+}
+function drawRotated(img, deg, maxSide, minSide = 0) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  let sc = Math.min(1, maxSide / Math.max(w, h));
+  if (minSide && Math.max(w, h) * sc < minSide) sc = minSide / Math.max(w, h);
+  const sw = Math.round(w * sc), sh = Math.round(h * sc);
+  const rot = ((deg % 360) + 360) % 360;
+  const c = document.createElement('canvas');
+  if (rot === 90 || rot === 270) { c.width = sh; c.height = sw; } else { c.width = sw; c.height = sh; }
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+  x.translate(c.width / 2, c.height / 2); x.rotate(rot * Math.PI / 180); x.drawImage(img, -sw / 2, -sh / 2, sw, sh);
+  return c;
+}
+const canvasToBlob = (c, q = 0.88) => new Promise(r => c.toBlob(r, 'image/jpeg', q));
+function makeThumb(src) {
+  const sc = Math.min(1, 520 / Math.max(src.width, src.height));
+  const c = document.createElement('canvas'); c.width = Math.round(src.width * sc); c.height = Math.round(src.height * sc);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8);
+}
+function prepForOcr(src) {
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(src, 0, 0);
+  const im = x.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4;
+  const hist = new Uint32Array(256); let sum = 0;
+  for (let i = 0; i < d.length; i += 4) { const g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000 | 0; d[i] = g; hist[g]++; sum += g; }
+  const invert = sum / n < 115;
+  let lo = 0, hi = 255, acc = 0;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > n * 0.01) { lo = v; break; } }
+  acc = 0; for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > n * 0.01) { hi = v; break; } }
+  const range = Math.max(1, hi - lo);
+  for (let i = 0; i < d.length; i += 4) {
+    let g = (d[i] - lo) * 255 / range; g = g < 0 ? 0 : g > 255 ? 255 : g; if (invert) g = 255 - g;
+    d[i] = d[i + 1] = d[i + 2] = g;
+  }
+  x.putImageData(im, 0, 0); return c;
+}
+
+window.__bizcard = { prepForOcr: (...a) => prepForOcr(...a), drawRotated: (...a) => drawRotated(...a), debug: [] };
+/* ---------- OCR ---------- */
+const OCR = {
+  worker: null, langs: '', ori: null, onProgress: null,
+  async main() {
+    if (typeof Tesseract === 'undefined') throw new Error('인식 엔진(tesseract.js)을 불러오지 못했어요. 인터넷 연결을 확인하거나 GitHub Pages 주소로 열어 주세요.');
+    const langs = (settings.langs.length ? settings.langs : ['eng']).join('+');
+    if (this.worker && this.langs === langs) return this.worker;
+    if (this.worker) { try { await this.worker.terminate(); } catch {} }
+    this.worker = await Tesseract.createWorker(langs, 1, { logger: m => this.onProgress && this.onProgress(m) });
+    await this.worker.setParameters({ preserve_interword_spaces: '1' });
+    this.langs = langs; return this.worker;
+  },
+  async oriWorker() {
+    if (!this.ori) this.ori = await Tesseract.createWorker('eng', 1, { logger: m => this.onProgress && this.onProgress(m) });
+    return this.ori;
+  },
+  subs: {},
+  async sub(lang) {
+    if (!this.subs[lang]) this.subs[lang] = Tesseract.createWorker(lang, 1, { logger: m => this.onProgress && this.onProgress(m) });
+    return this.subs[lang];
+  }
+};
+const ST = { 'loading tesseract core': '인식 엔진 불러오는 중', 'initializing tesseract': '엔진 준비 중', 'loading language traineddata': '언어 데이터 내려받는 중 (처음 한 번만)', 'loaded language traineddata': '언어 데이터 준비됨', 'initializing api': '엔진 준비 중', 'recognizing text': '글자 읽는 중' };
+
+function scoreOri(data) {
+  let s = 0;
+  for (const w of (data.words || [])) {
+    const t = (w.text || '').trim();
+    if (w.confidence >= 72 && /[A-Za-z0-9@]{2,}/.test(t)) s += t.length * (w.confidence / 100);
+  }
+  return s;
+}
+async function detectRotation(img, card) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const cands = h > w * 1.08 ? [90, 270, 0] : (w > h * 1.08 ? [0, 180] : [0, 90, 180, 270]);
+  setProg(card, '사진 방향 확인 중', 0.05);
+  const ow = await OCR.oriWorker();
+  let best = cands[0], bs = -1;
+  for (const r of cands) {
+    const { data } = await ow.recognize(prepForOcr(drawRotated(img, r, 1100)));
+    const s = scoreOri(data);
+    if (s > bs) { bs = s; best = r; }
+  }
+  return best;
+}
+const reCJKc = /[぀-ヿ㐀-鿿豈-﫿가-힯]/;
+const median = a => { const b = [...a].sort((x, y) => x - y); return b.length ? b[b.length >> 1] : 0; };
+function rawLines(data) {
+  let lines = data.lines;
+  if (!lines || !lines.length) {
+    lines = [];
+    (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => lines.push(l))));
+  }
+  return lines || [];
+}
+// Split each OCR line into column segments using word positions; join CJK words without stray spaces.
+function buildSegments(data) {
+  const out = [];
+  for (const l of rawLines(data)) {
+    const words = (l.words || []).filter(w => (w.text || '').trim() && w.bbox).sort((a, b) => a.bbox.x0 - b.bbox.x0);
+    if (!words.length) {
+      const t = (l.text || '').trim();
+      if (t) out.push({ text: t, conf: l.confidence || 0, h: l.bbox ? l.bbox.y1 - l.bbox.y0 : 20, bbox: l.bbox });
+      continue;
+    }
+    const lh = l.bbox ? l.bbox.y1 - l.bbox.y0 : 0;
+    const wh = Math.max(8, median(words.map(w => w.bbox.y1 - w.bbox.y0)), lh * 0.6);
+    const groups = [[words[0]]];
+    for (let i = 1; i < words.length; i++) {
+      const gap = words[i].bbox.x0 - words[i - 1].bbox.x1;
+      if (gap > Math.max(2.4 * wh, 30)) groups.push([words[i]]); else groups[groups.length - 1].push(words[i]);
+    }
+    for (const g of groups) {
+      let text = '', cs = 0, cn = 0;
+      g.forEach((w, i) => {
+        const t = w.text.trim();
+        if (i) {
+          const prev = g[i - 1].text.trim(), gap = w.bbox.x0 - g[i - 1].bbox.x1;
+          const reJ = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/;
+          const cjk = (reJ.test(prev.slice(-1)) && !/[a-z]/i.test(t[0])) || (reJ.test(t[0]) && !/[a-z]/i.test(prev.slice(-1)));
+          text += (!cjk || gap > 0.9 * wh) ? ' ' : '';
+        }
+        text += t; cs += (w.confidence || 0) * t.length; cn += t.length;
+      });
+      const bbox = { x0: Math.min(...g.map(w => w.bbox.x0)), x1: Math.max(...g.map(w => w.bbox.x1)), y0: Math.min(...g.map(w => w.bbox.y0)), y1: Math.max(...g.map(w => w.bbox.y1)) };
+      out.push({ text, conf: cn ? cs / cn : 0, h: bbox.y1 - bbox.y0, bbox });
+    }
+  }
+  if (!out.length) return (data.text || '').split('\n').filter(s => s.trim()).map(t => ({ text: t.trim(), conf: 60, h: 20 }));
+  return out.filter(l => l.text);
+}
+function dominantCJK(text) {
+  const kana = (text.match(/[぀-ヿ]/g) || []).length, hangul = (text.match(/[가-힯]/g) || []).length, han = (text.match(/[㐀-鿿]/g) || []).length;
+  const has = l => settings.langs.includes(l);
+  if (hangul >= 2 && hangul >= kana && has('kor')) return 'kor';
+  if ((kana >= 1 || han >= 2) && has('jpn')) return 'jpn';
+  if (han >= 2 && has('chi_tra')) return 'chi_tra';
+  if (han >= 2 && has('chi_sim')) return 'chi_sim';
+  if (hangul >= 1 && has('kor')) return 'kor';
+  return null;
+}
+// Crop one text line, optionally close up big gaps between characters, scale so text is ~40px tall.
+function cropLine(src, bb, compress) {
+  const th = bb.y1 - bb.y0, pad = Math.round(th * 0.22);
+  const x0 = Math.max(0, bb.x0 - pad), y0 = Math.max(0, bb.y0 - pad), x1 = Math.min(src.width, bb.x1 + pad), y1 = Math.min(src.height, bb.y1 + pad);
+  const w = x1 - x0, h = y1 - y0; if (w < 4 || h < 4) return null;
+  let c = document.createElement('canvas'); c.width = w; c.height = h;
+  const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(src, x0, y0, w, h, 0, 0, w, h);
+  {
+    const id = cx.getImageData(0, 0, w, h), d = id.data; let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += d[i];
+    if (sum / (d.length / 4) < 110) { for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i]; cx.putImageData(id, 0, 0); }
+  }
+  if (compress) {
+    const id = cx.getImageData(0, 0, w, h), d = id.data, keep = [], maxBlank = Math.max(2, Math.round(th * 0.14));
+    let run = 0;
+    for (let x = 0; x < w; x++) {
+      let ink = false;
+      for (let y = 0; y < h; y++) if (d[(y * w + x) * 4] < 128) { ink = true; break; }
+      if (ink) { run = 0; keep.push(x); } else if (++run <= maxBlank) keep.push(x);
+    }
+    if (keep.length > 4 && keep.length < w) {
+      const nd = cx.createImageData(keep.length, h);
+      for (let y = 0; y < h; y++) for (let i = 0; i < keep.length; i++) { const s0 = (y * w + keep[i]) * 4, t0 = (y * keep.length + i) * 4; nd.data[t0] = d[s0]; nd.data[t0 + 1] = d[s0 + 1]; nd.data[t0 + 2] = d[s0 + 2]; nd.data[t0 + 3] = 255; }
+      const c2 = document.createElement('canvas'); c2.width = keep.length; c2.height = h; c2.getContext('2d').putImageData(nd, 0, 0); c = c2;
+    }
+  }
+  const sc = 40 / th, out = document.createElement('canvas');
+  out.width = Math.round(c.width * sc) + 40; out.height = Math.round(c.height * sc) + 40;
+  const ox = out.getContext('2d'); ox.fillStyle = '#fff'; ox.fillRect(0, 0, out.width, out.height); ox.imageSmoothingQuality = 'high';
+  ox.drawImage(c, 20, 20, out.width - 40, out.height - 40);
+  return out;
+}
+// Find text lines Tesseract's layout step missed (e.g. big, widely spaced names): ink not covered by well-read lines.
+function findMissedLines(prep, segs) {
+  const W = prep.width, H = prep.height, C = 6, cw = Math.ceil(W / C), ch = Math.ceil(H / C);
+  const d = prep.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+  const good = segs.filter(s => s.bbox && s.conf >= 70 && ((s.text.match(/[\p{L}]/gu) || []).length >= 2 || (s.text.match(/\d/g) || []).length >= 4)).map(s => s.bbox);
+  const cell = new Uint8Array(cw * ch);
+  for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+    let n = 0;
+    for (let y = cy * C; y < Math.min(H, cy * C + C); y++) for (let x = cx * C; x < Math.min(W, cx * C + C); x++) if (d[(y * W + x) * 4] < 110) n++;
+    if (n >= 3) cell[cy * cw + cx] = 1;
+  }
+  for (const b of good) {
+    for (let cy = Math.max(0, (b.y0 - 6) / C | 0); cy <= Math.min(ch - 1, (b.y1 + 6) / C | 0); cy++)
+      for (let cx = Math.max(0, (b.x0 - 6) / C | 0); cx <= Math.min(cw - 1, (b.x1 + 6) / C | 0); cx++) cell[cy * cw + cx] = 0;
+  }
+  // connected components (8-neighbour, small horizontal bridge)
+  const lab = new Int32Array(cw * ch), comps = [];
+  for (let i = 0; i < cell.length; i++) {
+    if (!cell[i] || lab[i]) continue;
+    const q = [i]; lab[i] = comps.length + 1; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, n = 0;
+    while (q.length) {
+      const j = q.pop(), x = j % cw, y = j / cw | 0; n++;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= cw || ny >= ch) continue;
+        const k = ny * cw + nx; if (cell[k] && !lab[k]) { lab[k] = comps.length + 1; q.push(k); }
+      }
+    }
+    comps.push({ x0: x0 * C, x1: (x1 + 1) * C, y0: y0 * C, y1: (y1 + 1) * C, n });
+  }
+  // glyph-sized components only, then merge horizontally into lines (allow gaps up to ~2.4x height)
+  let g = comps.filter(c => { const h = c.y1 - c.y0, w = c.x1 - c.x0; return h >= 18 && h <= H * 0.2 && w <= W * 0.6 && c.n >= 6; });
+  g.sort((a, b) => a.x0 - b.x0);
+  const lines = [];
+  for (const c of g) {
+    const h = c.y1 - c.y0;
+    const L = lines.find(l => { const lh = l.y1 - l.y0, ov = Math.min(l.y1, c.y1) - Math.max(l.y0, c.y0);
+      return ov > 0.55 * Math.min(lh, h) && Math.max(lh, h) < 1.8 * Math.min(lh, h) && c.x0 - l.x1 < 2.4 * Math.max(lh, h); });
+    if (L) { L.x0 = Math.min(L.x0, c.x0); L.x1 = Math.max(L.x1, c.x1); L.y0 = Math.min(L.y0, c.y0); L.y1 = Math.max(L.y1, c.y1); L.parts.push(c); }
+    else lines.push({ ...c, parts: [c] });
+  }
+  const box = ps => ({ x0: Math.min(...ps.map(p => p.x0)), x1: Math.max(...ps.map(p => p.x1)), y0: Math.min(...ps.map(p => p.y0)), y1: Math.max(...ps.map(p => p.y1)) });
+  return lines.filter(l => (l.x1 - l.x0) >= (l.y1 - l.y0) * 0.9).map(l => {
+    const ps = l.parts, alts = [];
+    if (ps.length >= 3) { alts.push(box(ps.slice(1))); alts.push(box(ps.slice(0, -1))); }
+    return { ...box(ps), alts };
+  });
+}
+async function rereadWeak(card, prep, segs) {
+  const dom = dominantCJK(segs.map(s => s.text).join(''));
+  const medH = median(segs.map(s => s.h)) || 20;
+  const isContact = t => /@|https?:|www\.|\d{7,}|\d[\d\-()]{8,}/.test(t);
+  const latinOnly = t => !reCJKc.test(t);
+  const weak = segs.filter(s => s.bbox && s.h >= 10 && !isContact(s.text) &&
+    (latinOnly(s.text) && /[A-Za-z]{3,}/.test(s.text) ? s.conf < 60 : (s.conf < 80 || (s.h > medH * 1.6 && s.conf < 90))));
+  const meaningful = t => (t.match(/[\p{L}\p{N}]/gu) || []).length >= 2;
+  let k = 0;
+  for (const s of weak) {
+    setProg(card, `흐릿한 줄 다시 읽는 중 (${++k}/${weak.length})`, k / weak.length);
+    const tries = [];
+    if (dom) tries.push([dom, true]);
+    if (!reCJKc.test(s.text) || !dom) tries.push(['eng', false]);
+    let best = null;
+    for (const [lang, comp] of tries) {
+      if (!settings.langs.includes(lang) && lang !== 'eng') continue;
+      const img = cropLine(prep, s.bbox, comp); if (!img) continue;
+      try {
+        const wk = await OCR.sub(lang);
+        await wk.setParameters({ tessedit_pageseg_mode: '7', preserve_interword_spaces: '1' });
+        const { data } = await wk.recognize(img);
+        const t = (data.text || '').replace(/\s*\n\s*/g, ' ').replace(/^[|\s:;_.,]+|[|\s:;_]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+        if (t && (!best || data.confidence > best.conf)) best = { text: t, conf: data.confidence };
+      } catch (e) { console.warn('reread', e); }
+    }
+    if (best && meaningful(best.text) && best.conf >= Math.max(s.conf + 8, 45)) { s.text = best.text; s.conf = best.conf; s.reread = true; }
+  }
+  // lines the layout step missed
+  let missed = [];
+  try { missed = findMissedLines(prep, segs).slice(0, 14); } catch (e) { console.warn(e); }
+  k = 0;
+  for (let bb of missed) {
+    setProg(card, `빠진 줄 찾는 중 (${++k}/${missed.length})`, k / missed.length);
+    let best = null;
+    const variants = [];
+    for (const b2 of [bb, ...(bb.alts || [])]) for (const [lang, comp] of [[dom, true], [dom, false], ['eng', false]]) if (lang) variants.push([b2, lang, comp]);
+    let full = null, alt = null;
+    for (const [b2, lang, comp] of variants) {
+      if (full && full.conf >= 85) break;
+      const img = cropLine(prep, b2, comp); if (!img) continue;
+      try {
+        const wk = await OCR.sub(lang);
+        await wk.setParameters({ tessedit_pageseg_mode: '7', preserve_interword_spaces: '1' });
+        const { data } = await wk.recognize(img);
+        const t = (data.text || '').replace(/\s*\n\s*/g, ' ').replace(/^[|\s:;_.,]+|[|\s:;_]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+        const cand = { text: t, conf: data.confidence, bb: b2 };
+        if (t && b2 === bb && (!full || cand.conf > full.conf)) full = cand;
+        if (t && b2 !== bb && (!alt || cand.conf > alt.conf)) alt = cand;
+        if (window.__bizcardDebug) window.__bizcard.dbgMiss = (window.__bizcard.dbgMiss || []).concat(`${lang}${b2 === bb ? '' : '(alt)'}: ${t} (${data.confidence | 0})`);
+      } catch (e) { console.warn('missed', e); }
+    }
+    const squash = t => t.replace(/\s+/g, '').replace(/[lI|1]/g, 'I').replace(/[—–]/g, '-').toLowerCase();
+    best = full;
+    if (alt && (!full || (alt.conf >= full.conf + 10 && !squash(full.text).includes(squash(alt.text))))) best = alt;
+    if (!best || !meaningful(best.text) || best.conf < 62) continue;
+    bb = best.bb;
+    const cy = (bb.y0 + bb.y1) / 2;
+    // drop weak fragments inside this region, insert in reading order
+    for (let i = segs.length - 1; i >= 0; i--) {
+      const b = segs[i].bbox;
+      const ovx = b ? Math.min(b.x1, bb.x1) - Math.max(b.x0, bb.x0) : 0;
+      if (b && segs[i].conf < 70 && (b.y0 + b.y1) / 2 > bb.y0 && (b.y0 + b.y1) / 2 < bb.y1 && ovx > 0.4 * (b.x1 - b.x0)) {
+        if (squash(segs[i].text) === squash(best.text) && /\s/.test(segs[i].text)) best.text = segs[i].text;
+        segs.splice(i, 1);
+      }
+    }
+    let at = segs.findIndex(s2 => s2.bbox && (s2.bbox.y0 + s2.bbox.y1) / 2 > cy); if (at < 0) at = segs.length;
+    segs.splice(at, 0, { text: best.text, conf: best.conf, h: bb.y1 - bb.y0, bbox: bb, reread: true, found: true });
+  }
+  return segs;
+}
+function setProg(card, text, pct) {
+  progress[card.id] = { text, pct };
+  renderQueue();
+  if (cur && cur.id === card.id) { const el = $('#ocrState'); if (el) el.textContent = text + (pct != null ? ` · ${Math.round(pct * 100)}%` : ''); }
+}
+async function recognizeSide(card, side, rotate) {
+  const img = await loadImage(card[side]);
+  let rot = 0;
+  if (rotate) rot = await detectRotation(img, card);
+  if (rot) {
+    const stored = drawRotated(img, rot, 1800);
+    card[side] = await canvasToBlob(stored);
+    if (side === 'front') card.thumb = makeThumb(stored);
+  }
+  let base = drawRotated(img, rot, 2400);
+  if (Math.max(base.width, base.height) < 1700) base = drawRotated(img, rot, 2400, 1700);
+  const prep = prepForOcr(base);
+  OCR.onProgress = m => setProg(card, ST[m.status] || m.status, m.progress);
+  const wk = await OCR.main();
+  setProg(card, '글자 읽는 중', 0);
+  const { data } = await wk.recognize(prep);
+  let segs = buildSegments(data);
+  try { segs = await rereadWeak(card, prep, segs); } catch (e) { console.warn(e); }
+  if (window.__bizcardDebug) window.__bizcard.debug.push(segs.map(x => `[h${x.h} c${x.conf | 0}]${x.found ? ' [FOUND]' : x.reread ? ' [REREAD]' : ''} ${x.text}`));
+  return { lines: segs.map(({ text, conf, h }) => ({ text, conf, h })), raw: segs.map(l => l.text).join('\n'), rot };
+}
+function mergeList(target, src, keyFn) { src.forEach(v => { if (!target.some(t => keyFn(t) === keyFn(v))) target.push(v); }); }
+function applyParsed(card, r, mode) {
+  if (mode === 'overwrite') {
+    card.f = { ...Parser.EMPTY, ...r.fields };
+    card.phones = r.phones; card.emails = r.emails; card.urls = r.urls;
+    return;
+  }
+  const F = card.f;
+  for (const k of Object.keys(r.fields)) {
+    const v = r.fields[k]; if (!v) continue;
+    if (!F[k]) F[k] = v;
+    else if (k === 'name' && !F.nameAlt && Parser.scriptOf(v) !== Parser.scriptOf(F.name)) F.nameAlt = v;
+    else if (k === 'company' && !F.companyAlt && Parser.scriptOf(v) !== Parser.scriptOf(F.company)) F.companyAlt = v;
+    else if ((k === 'department' || k === 'title' || k === 'address') && !F[k].includes(v)) F[k] += '\n' + v;
+  }
+  mergeList(card.phones, r.phones, p => Parser.digits(p.value));
+  mergeList(card.emails, r.emails, e => e.toLowerCase());
+  mergeList(card.urls, r.urls, u => u.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, ''));
+}
+
+/* ---------- queue ---------- */
+const jobs = []; let busy = false;
+function enqueue(fn) { jobs.push(fn); pump(); }
+async function pump() {
+  if (busy) return; busy = true;
+  while (jobs.length) { const j = jobs.shift(); try { await j(); } catch (e) { console.error(e); toast('인식 실패: ' + (e.message || e)); } }
+  busy = false; renderQueue();
+}
+function ocrJob(card, opts) {
+  return async () => {
+    if (!cards.includes(card)) return;
+    card.status = 'ocr'; renderQueue();
+    try {
+      const side = opts.side || 'front';
+      const res = await recognizeSide(card, side, opts.rotate);
+      const parsed = Parser.parse(res.lines);
+      if (side === 'front') {
+        applyParsed(card, parsed, opts.mode || 'overwrite');
+        card.ocr = { lines: parsed.lines, raw: res.raw, at: Date.now() };
+      } else {
+        applyParsed(card, parsed, 'fill');
+        card.ocrBack = { lines: parsed.lines, raw: res.raw, at: Date.now() };
+      }
+      if (opts.rotateBack && card.back) {
+        const bimg = await loadImage(card.back);
+        const br = await detectRotation(bimg, card);
+        if (br) card.back = await canvasToBlob(drawRotated(bimg, br, 1800));
+      }
+      card.status = 'done';
+    } catch (e) {
+      card.status = 'error'; toast('인식 실패: ' + (e.message || e));
+    }
+    delete progress[card.id];
+    card.updatedAt = Date.now();
+    await DB.put(card);
+    render();
+    if (cur && cur.id === card.id) openDetail(card.id, true);
+  };
+}
+
+async function addFiles(fileList) {
+  const files = [...fileList].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp|gif|heic|heif)$/i.test(f.name));
+  if (!files.length) return;
+  const pair = $('#pairMode').checked && files.length > 1;
+  const groups = [];
+  if (pair) for (let i = 0; i < files.length; i += 2) groups.push([files[i], files[i + 1]]);
+  else files.forEach(f => groups.push([f]));
+  let first = null;
+  for (const [fr, bk] of groups) {
+    try {
+      const card = newCard();
+      const fc = drawRotated(await loadImage(fr), 0, 1800);
+      card.front = await canvasToBlob(fc); card.thumb = makeThumb(fc);
+      if (bk) card.back = await canvasToBlob(drawRotated(await loadImage(bk), 0, 1800));
+      cards.unshift(card); await DB.put(card);
+      enqueue(ocrJob(card, { rotate: settings.autoRotate, rotateBack: settings.autoRotate, mode: 'overwrite' }));
+      first = first || card;
+    } catch (e) { toast(`${fr.name}: ${e.message}`); }
+  }
+  render();
+  if (groups.length === 1 && first) openDetail(first.id);
+  else toast(`${groups.length}장의 명함을 차례로 인식할게요`);
+}
+
+/* ---------- list rendering ---------- */
+const searchText = c => [c.f.name, c.f.nameAlt, c.f.reading, c.f.company, c.f.companyAlt, c.f.department, c.f.title, c.f.address, c.f.extra, c.metPlace,
+  ...c.phones.map(p => p.value + ' ' + Parser.digits(p.value)), ...c.emails, ...c.urls, ...c.tags, ...c.memos.map(m => m.text)].join(' ').toLowerCase();
+let filterStar = false;
+function filtered() {
+  const q = $('#q').value.trim().toLowerCase();
+  const co = $('#fCompany').value, tg = $('#fTag').value;
+  let list = cards.filter(c => (!filterStar || c.starred) && (!co || (c.f.company || '(회사 미입력)') === co) && (!tg || c.tags.includes(tg)) && (!q || q.split(/\s+/).every(w => searchText(c).includes(w))));
+  const s = settings.sort, coll = new Intl.Collator('ko');
+  list.sort((a, b) => {
+    if (s === 'name') return coll.compare(a.f.name || a.f.nameAlt || '힣', b.f.name || b.f.nameAlt || '힣');
+    if (s === 'company') return coll.compare(a.f.company || '힣', b.f.company || '힣') || coll.compare(a.f.name, b.f.name);
+    if (s === 'updated') return b.updatedAt - a.updatedAt;
+    if (s === 'follow') return (a.followUp || '9999') < (b.followUp || '9999') ? -1 : (a.followUp || '9999') > (b.followUp || '9999') ? 1 : 0;
+    return b.createdAt - a.createdAt;
+  });
+  return list;
+}
+function fillFilters() {
+  const coll = new Intl.Collator('ko');
+  const cos = [...new Set(cards.map(c => c.f.company || '(회사 미입력)'))].sort(coll.compare);
+  const tags = [...new Set(cards.flatMap(c => c.tags))].sort(coll.compare);
+  const fc = $('#fCompany'), ft = $('#fTag'), cv = fc.value, tv = ft.value;
+  fc.innerHTML = '<option value="">모든 회사</option>' + cos.map(c => `<option${c === cv ? ' selected' : ''}>${esc(c)}</option>`).join('');
+  ft.innerHTML = '<option value="">모든 태그</option>' + tags.map(t => `<option${t === tv ? ' selected' : ''}>${esc(t)}</option>`).join('');
+}
+function cardHTML(c) {
+  const sub = [c.f.title, c.f.department].filter(Boolean).map(s => s.split('\n')[0]).join(' · ');
+  const st = c.status === 'pending' || c.status === 'ocr' ? '<span class="bc-badge">인식 중…</span>' : c.status === 'error' ? '<span class="bc-badge">인식 실패 · 직접 입력</span>' : '';
+  const due = c.followUp && c.followUp <= todayISO() ? `<span class="pill due">연락 ${esc(c.followUp.slice(5).replace('-', '/'))}</span>` : c.followUp ? `<span class="pill">연락 ${esc(c.followUp.slice(5).replace('-', '/'))}</span>` : '';
+  return `<article class="bc" data-id="${c.id}">
+    <div class="bc-img">${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">` : ''}${st}</div>
+    <div class="bc-body">
+      <div class="bc-name">${esc(c.f.name || c.f.nameAlt || '(이름 없음)')}${c.f.name && c.f.nameAlt ? `<span class="bc-alt">${esc(c.f.nameAlt)}</span>` : ''}</div>
+      <div class="bc-co">${esc(c.f.company || c.f.companyAlt || '')}</div>
+      <div class="bc-sub">${esc(sub)}</div>
+      <div class="bc-meta">${due}${c.memos.length ? `<span class="pill">메모 ${c.memos.length}</span>` : ''}${c.back ? '<span class="pill">뒷면</span>' : ''}${c.tags.map(t => `<span class="pill">#${esc(t)}</span>`).join('')}</div>
+    </div>
+    <button class="qmemo" data-qm="${c.id}" title="빠른 메모" aria-label="빠른 메모">✎</button>
+    <button class="star ${c.starred ? 'on' : ''}" data-star="${c.id}" title="즐겨찾기" aria-label="즐겨찾기">★</button>
+  </article>`;
+}
+function render() {
+  fillFilters();
+  const list = filtered();
+  const g = $('#grid');
+  g.className = 'grid' + (settings.view === 'list' ? ' list' : '');
+  g.innerHTML = list.map(cardHTML).join('');
+  $('#empty').hidden = cards.length > 0;
+  $('#count').textContent = cards.length ? (list.length === cards.length ? `명함 ${cards.length}장` : `명함 ${cards.length}장 중 ${list.length}장`) : '';
+  renderQueue();
+}
+function renderQueue() {
+  const pend = cards.filter(c => c.status === 'pending' || c.status === 'ocr');
+  const q = $('#queue'); q.hidden = !pend.length;
+  q.innerHTML = pend.map((c, i) => {
+    const p = progress[c.id];
+    return `<div class="q-item"><img src="${c.thumb}" alt=""><div class="q-t"><b>${c.status === 'ocr' ? '인식 중' : `대기 중 (${i + 1}/${pend.length})`}</b>${esc(p ? p.text : '차례를 기다리는 중')}<div class="bar"><i style="width:${p && p.pct != null ? Math.round(p.pct * 100) : 0}%"></i></div></div></div>`;
+  }).join('');
+}
+
+/* ---------- detail ---------- */
+let cur = null, saveTimer = null, curSide = 'front', urls = [];
+const dlg = $('#dlg');
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, 450);
+}
+async function flushSave() {
+  clearTimeout(saveTimer); saveTimer = null;
+  const c = cur; if (!c) return;
+  c.updatedAt = Date.now();
+  await DB.put(c);
+  if (cur !== c) { render(); return; }
+  const s = $('#dSaved'); if (s) { s.textContent = '저장됨 ✓'; clearTimeout(flushSave._t); flushSave._t = setTimeout(() => { if (s) s.textContent = ''; }, 1500); }
+  const n = $('#dName'); if (n) n.textContent = cur.f.name || cur.f.nameAlt || '새 명함';
+  render();
+}
+const fld = (k, label, o = {}) => `<label class="fld${o.wide ? ' wide' : ''}"><span>${label}</span>${o.multi
+  ? `<textarea data-f="${k}" rows="${o.rows || 2}">${esc(cur.f[k])}</textarea>`
+  : `<input data-f="${k}" value="${esc(cur.f[k])}"${o.ph ? ` placeholder="${esc(o.ph)}"` : ''}>`}</label>`;
+
+const MEMO_CHIPS = [['🤝 미팅', '🤝 미팅: '], ['📞 통화', '📞 통화: '], ['✉️ 메일', '✉️ 메일: '], ['📦 견적·샘플', '📦 견적/샘플: '], ['🔁 후속 조치', '🔁 할 일: '], ['💡 특이사항', '💡 '], ['📍 장소', '📍 ']];
+const composeHTML = p => `<div class="compose">
+  <div class="memo-chips">${MEMO_CHIPS.map(([l, v]) => `<button type="button" data-ins="${esc(v)}">${l}</button>`).join('')}</div>
+  <textarea id="${p}Text" placeholder="메모를 적어 두세요. 무엇을 이야기했는지, 다음에 할 일 등"></textarea>
+  <div class="compose-row"><input type="datetime-local" id="${p}At" title="메모 시각 (바꿀 수 있어요)"><span class="hint">Ctrl+Enter 저장</span><button type="button" class="btn sm primary" id="${p}Add">메모 저장</button></div>
+</div>`;
+function bindCompose(p, root, card, after) {
+  const ta = root.querySelector(`#${p}Text`), at = root.querySelector(`#${p}At`);
+  at.value = toLocalInput(Date.now());
+  root.querySelectorAll('[data-ins]').forEach(b => b.onclick = () => {
+    const v = b.dataset.ins, s = ta.selectionStart ?? ta.value.length;
+    const pre = ta.value.slice(0, s), add = (pre && !pre.endsWith('\n') ? '\n' : '') + v;
+    ta.value = pre + add + ta.value.slice(ta.selectionEnd ?? s);
+    ta.focus(); const pos = (pre + add).length; ta.setSelectionRange(pos, pos);
+  });
+  const add = async () => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    const t = at.value ? new Date(at.value).getTime() : Date.now();
+    card.memos.unshift({ id: uid(), at: isNaN(t) ? Date.now() : t, text });
+    card.memos.sort((a, b) => b.at - a.at);
+    ta.value = ''; at.value = toLocalInput(Date.now());
+    card.updatedAt = Date.now(); await DB.put(card); render(); after && after();
+    toast('메모를 저장했어요');
+  };
+  root.querySelector(`#${p}Add`).onclick = add;
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); add(); } });
+}
+
+function detailHTML() {
+  const c = cur;
+  return `<div class="d-head">
+    <button class="icon-btn" data-act="close" aria-label="닫기">✕</button>
+    <div class="d-title"><strong id="dName">${esc(c.f.name || c.f.nameAlt || '새 명함')}</strong><span class="saved" id="dSaved"></span></div>
+    <button class="icon-btn star ${c.starred ? 'on' : ''}" data-act="star" title="즐겨찾기" aria-label="즐겨찾기">★</button>
+    <button class="btn sm" data-act="vcf" title="휴대폰 연락처로 저장">연락처 저장</button>
+    <button class="btn sm danger" data-act="delete">삭제</button>
+  </div>
+  <div class="d-body">
+    <div class="d-media">
+      <div class="side-tabs"><button data-side="front">앞면</button><button data-side="back">${c.back ? '뒷면' : '뒷면 +'}</button></div>
+      <div class="media-box" id="mediaBox"></div>
+      <div class="media-actions" id="mediaActions"></div>
+      <div class="ocr-state" id="ocrState">${c.status === 'pending' || c.status === 'ocr' ? '인식 대기 중…' : c.status === 'error' ? '인식에 실패했어요. 직접 입력하거나 다시 인식해 보세요.' : ''}</div>
+      <section class="memo-sec">
+        <h3>📝 메모</h3>
+        <div class="meet">
+          <label>만난 날<input type="date" data-m="metDate" value="${esc(c.metDate)}"></label>
+          <label>장소 · 행사<input data-m="metPlace" value="${esc(c.metPlace)}" placeholder="예) 오사카 전시회, 본사 방문"></label>
+          <label>다음 연락일<input type="date" data-m="followUp" value="${esc(c.followUp)}"></label>
+        </div>
+        <div class="tags-edit" id="tagsEdit"></div>
+        ${composeHTML('dm')}
+        <ul class="memo-list" id="memoList"></ul>
+      </section>
+    </div>
+    <div class="d-form">
+      <section class="sec"><h3>기본 정보</h3><div class="fgrid">
+        ${fld('name', '이름')}${fld('nameAlt', '다른 표기 (영문 등)')}
+        ${fld('reading', '읽는 법 (후리가나)')}${fld('title', '직함', { multi: true, rows: 1 })}
+        ${fld('company', '회사')}${fld('companyAlt', '회사 (다른 표기)')}
+        ${fld('department', '부서', { multi: true, wide: true })}
+      </div></section>
+      <section class="sec"><h3>연락처</h3>
+        <div class="multi" id="phoneList"></div>
+        <div class="multi" id="emailList"></div>
+        <div class="multi" id="urlList"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn sm ghost" data-act="addPhone">+ 전화번호</button>
+          <button class="btn sm ghost" data-act="addEmail">+ 이메일</button>
+          <button class="btn sm ghost" data-act="addUrl">+ 웹사이트</button>
+        </div>
+      </section>
+      <section class="sec"><h3>주소</h3><div class="fgrid">
+        ${fld('postal', '우편번호')}<div class="fld map-link" id="mapLink"></div>
+        ${fld('address', '주소', { multi: true, wide: true, rows: 3 })}
+      </div></section>
+      <section class="sec"><h3>기타</h3><div class="fgrid">${fld('extra', '분류되지 않은 텍스트 (슬로건, 추가 정보 등)', { multi: true, wide: true, rows: 3 })}</div></section>
+      <details class="sec ocr-lines" id="ocrLines"></details>
+    </div>
+  </div>`;
+}
+function revokeUrls() { urls.forEach(u => URL.revokeObjectURL(u)); urls = []; }
+function renderMedia() {
+  const c = cur, box = $('#mediaBox'), act = $('#mediaActions');
+  $$('.side-tabs button', dlg).forEach(b => b.classList.toggle('on', b.dataset.side === curSide));
+  const blob = c[curSide];
+  revokeUrls();
+  if (blob) { const u = URL.createObjectURL(blob); urls.push(u); box.innerHTML = `<img src="${u}" alt="${curSide === 'front' ? '앞면' : '뒷면'}">`; box.querySelector('img').onclick = () => zoom(u); }
+  else box.innerHTML = `<div class="ph">${curSide === 'back' ? '뒷면 이미지가 없어요.<br>아래 버튼으로 추가하세요.' : '이미지 없음'}</div>`;
+  const rot = blob ? `<button class="btn sm" data-rot="-90" title="왼쪽으로 회전">⟲ 회전</button><button class="btn sm" data-rot="90" title="오른쪽으로 회전">⟳ 회전</button>` : '';
+  if (curSide === 'front') {
+    act.innerHTML = rot + `<button class="btn sm" data-act="reocr">다시 인식</button><button class="btn sm" data-act="fillocr" title="비어 있는 칸만 채워요">빈 칸만 채우기</button><button class="btn sm" data-act="replace">사진 바꾸기</button>`;
+  } else {
+    act.innerHTML = blob
+      ? rot + `<button class="btn sm" data-act="addBack">뒷면 바꾸기</button><button class="btn sm" data-act="backfill" title="뒷면을 읽어 비어 있는 칸만 채워요 (선택)">뒷면으로 빈 칸 채우기</button><button class="btn sm danger" data-act="delBack">뒷면 삭제</button>`
+      : `<button class="btn sm primary" data-act="addBack">+ 뒷면 이미지 추가</button>`;
+  }
+  act.querySelectorAll('[data-rot]').forEach(b => b.onclick = () => rotateSide(curSide, +b.dataset.rot));
+}
+function zoom(u) {
+  const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<img src="${u}" alt="">`;
+  z.onclick = () => z.remove(); dlg.appendChild(z);
+}
+async function rotateSide(side, deg) {
+  const img = await loadImage(cur[side]);
+  const c = drawRotated(img, deg, 1800);
+  cur[side] = await canvasToBlob(c);
+  if (side === 'front') cur.thumb = makeThumb(c);
+  renderMedia(); scheduleSave();
+  if (side === 'front') toast('방향을 바꿨어요. 필요하면 "다시 인식"을 눌러 주세요');
+}
+function phoneHref(v) { return 'tel:' + v.replace(/[^\d+]/g, ''); }
+function renderContacts() {
+  const c = cur;
+  $('#phoneList').innerHTML = c.phones.map((p, i) => `<div class="mrow">
+    <select data-pt="${i}">${Object.entries(PHONE_TYPES).map(([k, v]) => `<option value="${k}"${p.type === k ? ' selected' : ''}>${v}</option>`).join('')}</select>
+    <input data-pv="${i}" value="${esc(p.value)}" inputmode="tel" placeholder="전화번호">
+    ${p.type !== 'fax' ? `<a href="${esc(phoneHref(p.value))}" title="전화 걸기">📞</a>` : ''}<button class="x" data-px="${i}" title="삭제">✕</button></div>`).join('');
+  $('#emailList').innerHTML = c.emails.map((e, i) => `<div class="mrow"><input data-ev="${i}" value="${esc(e)}" inputmode="email" placeholder="이메일">
+    <a href="mailto:${esc(e)}" title="메일 쓰기">✉️</a><button class="x" data-ex="${i}" title="삭제">✕</button></div>`).join('');
+  $('#urlList').innerHTML = c.urls.map((u, i) => `<div class="mrow"><input data-uv="${i}" value="${esc(u)}" inputmode="url" placeholder="웹사이트">
+    <a href="${esc(/^https?:/i.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener" title="열기">↗</a><button class="x" data-ux="${i}" title="삭제">✕</button></div>`).join('');
+  const bind = (sel, fn) => $$(sel, dlg).forEach(el => fn(el));
+  bind('[data-pt]', el => el.onchange = () => { c.phones[+el.dataset.pt].type = el.value; renderContacts(); scheduleSave(); });
+  bind('[data-pv]', el => el.oninput = () => { c.phones[+el.dataset.pv].value = el.value; scheduleSave(); });
+  bind('[data-px]', el => el.onclick = () => { c.phones.splice(+el.dataset.px, 1); renderContacts(); scheduleSave(); });
+  bind('[data-ev]', el => el.oninput = () => { c.emails[+el.dataset.ev] = el.value.trim(); scheduleSave(); });
+  bind('[data-ex]', el => el.onclick = () => { c.emails.splice(+el.dataset.ex, 1); renderContacts(); scheduleSave(); });
+  bind('[data-uv]', el => el.oninput = () => { c.urls[+el.dataset.uv] = el.value.trim(); scheduleSave(); });
+  bind('[data-ux]', el => el.onclick = () => { c.urls.splice(+el.dataset.ux, 1); renderContacts(); scheduleSave(); });
+}
+function renderMap() {
+  const a = (cur.f.address || '').trim();
+  $('#mapLink').innerHTML = a ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.split('\n')[0])}" target="_blank" rel="noopener">🗺 지도에서 보기</a>` : '';
+}
+function renderTags() {
+  const box = $('#tagsEdit'), all = [...new Set(cards.flatMap(c => c.tags))];
+  box.innerHTML = cur.tags.map((t, i) => `<span class="tag">#${esc(t)}<button data-tx="${i}" aria-label="태그 삭제">✕</button></span>`).join('') +
+    `<input class="tag-in" id="tagIn" list="tagList" placeholder="${cur.tags.length ? '태그 추가' : '태그 (예: 공급사, 2026전시회)'}"><datalist id="tagList">${all.map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
+  box.querySelectorAll('[data-tx]').forEach(b => b.onclick = () => { cur.tags.splice(+b.dataset.tx, 1); renderTags(); scheduleSave(); });
+  const inp = $('#tagIn');
+  const commit = () => { const v = inp.value.replace(/[#,]/g, ' ').trim(); if (v) { v.split(/\s+/).forEach(t => { if (!cur.tags.includes(t)) cur.tags.push(t); }); renderTags(); scheduleSave(); $('#tagIn').focus(); } };
+  inp.addEventListener('keydown', e => { if ((e.key === 'Enter' && !e.isComposing) || e.key === ',') { e.preventDefault(); commit(); } });
+  inp.addEventListener('change', commit);
+}
+function renderMemos() {
+  const ul = $('#memoList');
+  ul.innerHTML = cur.memos.length ? cur.memos.map(m => `<li data-mid="${m.id}">
+    <div class="memo-when"><span>${fmtDT(m.at)}</span><span><button data-me="${m.id}">수정</button><button data-md="${m.id}">삭제</button></span></div>
+    <div class="memo-text">${esc(m.text)}</div></li>`).join('') : '';
+  ul.querySelectorAll('[data-md]').forEach(b => b.onclick = () => {
+    if (!confirm('이 메모를 지울까요?')) return;
+    cur.memos = cur.memos.filter(m => m.id !== b.dataset.md); renderMemos(); scheduleSave();
+  });
+  ul.querySelectorAll('[data-me]').forEach(b => b.onclick = () => {
+    const m = cur.memos.find(x => x.id === b.dataset.me), li = b.closest('li');
+    li.innerHTML = `<div class="memo-when"><span>${fmtDT(m.at)}</span><span><button data-ok>저장</button><button data-cancel>취소</button></span></div><textarea>${esc(m.text)}</textarea>`;
+    const ta = li.querySelector('textarea'); ta.focus();
+    const ok = () => { m.text = ta.value.trim() || m.text; renderMemos(); scheduleSave(); };
+    li.querySelector('[data-ok]').onclick = ok;
+    li.querySelector('[data-cancel]').onclick = renderMemos;
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ok(); } });
+  });
+}
+const ASSIGN_OPTS = [['name', '이름'], ['nameAlt', '다른 표기'], ['reading', '읽는 법'], ['company', '회사'], ['companyAlt', '회사(다른 표기)'], ['department', '부서(추가)'], ['title', '직함'],
+  ['mobile', '휴대폰 추가'], ['tel', '전화 추가'], ['fax', '팩스 추가'], ['email', '이메일 추가'], ['url', '웹사이트 추가'], ['postal', '우편번호'], ['address', '주소(추가)'], ['extra', '기타(추가)']];
+function renderOcrLines() {
+  const el = $('#ocrLines'), lines = (cur.ocr && cur.ocr.lines) || [];
+  if (!lines.length) { el.innerHTML = '<summary>인식된 텍스트 없음</summary>'; return; }
+  el.innerHTML = `<summary>인식된 텍스트 ${lines.length}줄 · 빠진 항목 확인/옮기기</summary>
+    <p class="ocr-help">모든 줄을 그대로 보여줘요. 잘못 분류됐거나 빠진 줄은 오른쪽에서 항목을 고르면 그 칸에 들어가요.</p>
+    <ol>${lines.map((l, i) => {
+      const tg = l.tags.length ? l.tags.map(t => FIELD_LABEL[t] || t).join('·') : '미분류';
+      return `<li class="${l.tags.includes('noise') ? 'noise' : ''}"><span class="lt">${esc(tg)}</span><span class="tx">${esc(l.text)}</span>
+        <select data-line="${i}" aria-label="항목 선택"><option value="">→ 넣기</option>${ASSIGN_OPTS.map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></li>`;
+    }).join('')}</ol>
+    <button class="btn sm" data-act="copyRaw">원문 전체 복사</button>`;
+  el.querySelectorAll('[data-line]').forEach(s => s.onchange = () => {
+    const k = s.value; if (!k) return;
+    const text = lines[+s.dataset.line].text.trim();
+    assignLine(k, text);
+    s.value = '';
+  });
+}
+function assignLine(k, text) {
+  const F = cur.f;
+  if (['mobile', 'tel', 'fax'].includes(k)) { const v = (text.match(/\+?\(?\d[\d\s.\-()]{6,}\d/) || [text])[0]; cur.phones.push({ type: k, value: v.trim() }); renderContacts(); }
+  else if (k === 'email') { cur.emails.push((text.match(/\S+@\S+/) || [text])[0]); renderContacts(); }
+  else if (k === 'url') { cur.urls.push((text.match(/(https?:\/\/|www\.)\S+|\S+\.\S{2,}/) || [text])[0]); renderContacts(); }
+  else if (['department', 'address', 'extra'].includes(k)) { F[k] = F[k] ? F[k] + (k === 'extra' ? '\n' : ' ') + text : text; }
+  else if (k === 'postal') { F.postal = (text.match(/\d{3}-?\d{4}|\d{5}/) || [text])[0]; }
+  else F[k] = text;
+  $$('[data-f]', dlg).forEach(el => { if (el !== document.activeElement) el.value = cur.f[el.dataset.f] || ''; });
+  renderMap(); scheduleSave();
+  toast(`"${text.slice(0, 20)}" → ${FIELD_LABEL[k] || k}`);
+}
+
+function openDetail(id, keepSide) {
+  const c = cards.find(x => x.id === id); if (!c) return;
+  if (cur && cur.id !== id && saveTimer) flushSave();
+  const scroll = dlg.open ? dlg.scrollTop : 0;
+  cur = c; if (!keepSide) curSide = 'front';
+  dlg.innerHTML = detailHTML();
+  renderMedia(); renderContacts(); renderMap(); renderTags(); renderMemos(); renderOcrLines();
+  bindCompose('dm', dlg, cur, renderMemos);
+  $$('[data-f]', dlg).forEach(el => el.addEventListener('input', () => { cur.f[el.dataset.f] = el.value; if (el.dataset.f === 'address') renderMap(); scheduleSave(); }));
+  $$('[data-m]', dlg).forEach(el => el.addEventListener('input', () => { cur[el.dataset.m] = el.value; scheduleSave(); }));
+  $$('.side-tabs button', dlg).forEach(b => b.onclick = () => { curSide = b.dataset.side; renderMedia(); });
+  if (!dlg.open) dlg.showModal(); else dlg.scrollTop = scroll;
+  if (progress[c.id]) setProg(c, progress[c.id].text, progress[c.id].pct);
+}
+dlg.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, c = cur;
+  if (a === 'close') dlg.close();
+  else if (a === 'star') { c.starred = !c.starred; b.classList.toggle('on', c.starred); scheduleSave(); }
+  else if (a === 'vcf') download(`${fileSafe(c.f.name || c.f.nameAlt || 'contact')}.vcf`, vcard(c), 'text/vcard');
+  else if (a === 'delete') { if (confirm('이 명함을 삭제할까요? 메모도 함께 지워져요.')) { await DB.del(c.id); cards = cards.filter(x => x !== c); cur = null; dlg.close(); render(); toast('삭제했어요'); } }
+  else if (a === 'addPhone') { c.phones.push({ type: 'mobile', value: '' }); renderContacts(); $$('[data-pv]', dlg).pop()?.focus(); }
+  else if (a === 'addEmail') { c.emails.push(''); renderContacts(); $$('[data-ev]', dlg).pop()?.focus(); }
+  else if (a === 'addUrl') { c.urls.push(''); renderContacts(); $$('[data-uv]', dlg).pop()?.focus(); }
+  else if (a === 'reocr') {
+    if (!confirm('앞면을 다시 인식해서 입력 칸을 새 결과로 바꿀까요?\n메모·태그·만난 날은 그대로 남아요.')) return;
+    await flushSave(); c.status = 'pending'; render(); setProg(c, '대기 중', 0);
+    enqueue(ocrJob(c, { rotate: false, mode: 'overwrite' }));
+  }
+  else if (a === 'fillocr') { await flushSave(); c.status = 'pending'; render(); setProg(c, '대기 중', 0); enqueue(ocrJob(c, { rotate: false, mode: 'fill' })); }
+  else if (a === 'backfill') { await flushSave(); c.status = 'pending'; render(); setProg(c, '대기 중', 0); enqueue(ocrJob(c, { side: 'back', rotate: false, mode: 'fill' })); }
+  else if (a === 'replace') $('#inReplace').click();
+  else if (a === 'addBack') $('#inBack').click();
+  else if (a === 'delBack') { if (confirm('뒷면 이미지를 지울까요?')) { c.back = null; renderMedia(); $$('.side-tabs button', dlg)[1].textContent = '뒷면 +'; scheduleSave(); } }
+  else if (a === 'copyRaw') { const t = (c.ocr && c.ocr.lines || []).map(l => l.text).join('\n'); try { await navigator.clipboard.writeText(t); toast('복사했어요'); } catch { toast('복사하지 못했어요'); } }
+});
+dlg.addEventListener('close', () => { if (saveTimer) flushSave(); revokeUrls(); cur = null; });
+$('#inBack').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !cur) return;
+  try {
+    const img = await loadImage(f);
+    let rot = 0;
+    if (settings.autoRotate) { try { rot = await detectRotation(img, cur); } catch {} delete progress[cur.id]; renderQueue(); $('#ocrState').textContent = ''; }
+    cur.back = await canvasToBlob(drawRotated(img, rot, 1800));
+    curSide = 'back'; renderMedia(); $$('.side-tabs button', dlg)[1].textContent = '뒷면'; scheduleSave();
+  } catch (err) { toast(err.message); }
+};
+$('#inReplace').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !cur) return;
+  try {
+    const c = drawRotated(await loadImage(f), 0, 1800);
+    cur.front = await canvasToBlob(c); cur.thumb = makeThumb(c);
+    await flushSave(); renderMedia();
+    if (confirm('새 사진으로 다시 인식할까요?')) { cur.status = 'pending'; render(); enqueue(ocrJob(cur, { rotate: settings.autoRotate, mode: 'overwrite' })); }
+  } catch (err) { toast(err.message); }
+};
+
+/* ---------- quick memo ---------- */
+const dlgMemo = $('#dlgMemo');
+function openQuickMemo(id) {
+  const c = cards.find(x => x.id === id); if (!c) return;
+  $('#qmTitle').textContent = `메모 · ${c.f.name || c.f.nameAlt || '명함'}`;
+  $('#qmBody').innerHTML = composeHTML('qm') + `<ul class="memo-list">${c.memos.slice(0, 3).map(m => `<li><div class="memo-when"><span>${fmtDT(m.at)}</span></div><div class="memo-text">${esc(m.text)}</div></li>`).join('')}</ul>`;
+  bindCompose('qm', $('#qmBody'), c, () => dlgMemo.close());
+  dlgMemo.showModal(); setTimeout(() => $('#qmText').focus(), 50);
+}
+
+/* ---------- export / import ---------- */
+const fileSafe = s => s.replace(/[\\/:*?"<>|\n]+/g, '_').slice(0, 60);
+function download(name, data, type) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: type + ';charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function vcard(c) {
+  const e = s => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const F = c.f, name = F.name || F.nameAlt || F.company || '';
+  const L = ['BEGIN:VCARD', 'VERSION:3.0', 'FN:' + e(name), 'N:' + e(name) + ';;;;'];
+  if (F.reading) L.push('X-PHONETIC-LAST-NAME:' + e(F.reading));
+  if (F.name && F.nameAlt) L.push('NICKNAME:' + e(F.nameAlt));
+  if (F.company || F.department) L.push('ORG:' + e(F.company || F.companyAlt) + (F.department ? ';' + e(F.department.replace(/\n/g, ' / ')) : ''));
+  if (F.title) L.push('TITLE:' + e(F.title.replace(/\n/g, ' / ')));
+  c.phones.filter(p => p.value).forEach(p => L.push('TEL;TYPE=' + ({ mobile: 'CELL', tel: 'WORK,VOICE', fax: 'WORK,FAX' }[p.type] || 'VOICE') + ':' + p.value));
+  c.emails.filter(Boolean).forEach(m => L.push('EMAIL;TYPE=INTERNET:' + m));
+  c.urls.filter(Boolean).forEach(u => L.push('URL:' + u));
+  if (F.address || F.postal) L.push('ADR;TYPE=WORK:;;' + e(F.address.replace(/\n/g, ' ')) + ';;;' + e(F.postal) + ';');
+  const note = [F.companyAlt && `회사(다른 표기): ${F.companyAlt}`, c.metDate && `만난 날: ${c.metDate}`, c.metPlace && `장소: ${c.metPlace}`, ...c.memos.map(m => `[${fmtDT(m.at)}] ${m.text}`), F.extra].filter(Boolean).join('\n');
+  if (note) L.push('NOTE:' + e(note));
+  if (c.tags.length) L.push('CATEGORIES:' + c.tags.map(e).join(','));
+  L.push('END:VCARD');
+  return L.join('\r\n');
+}
+function csv() {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const ph = (c, t) => c.phones.filter(p => p.type === t).map(p => p.value).join(' / ');
+  const head = ['이름', '다른 표기', '읽는 법', '회사', '회사(다른 표기)', '부서', '직함', '휴대폰', '전화', '팩스', '이메일', '웹사이트', '우편번호', '주소', '태그', '만난 날', '장소·행사', '다음 연락일', '메모', '기타', '등록일'];
+  const rows = filtered().map(c => [c.f.name, c.f.nameAlt, c.f.reading, c.f.company, c.f.companyAlt, c.f.department, c.f.title, ph(c, 'mobile'), ph(c, 'tel'), ph(c, 'fax'),
+    c.emails.join(' / '), c.urls.join(' / '), c.f.postal, c.f.address, c.tags.join(' '), c.metDate, c.metPlace, c.followUp,
+    c.memos.map(m => `[${fmtDT(m.at)}] ${m.text}`).join('\n'), c.f.extra, fmtDT(c.createdAt)]);
+  return '\ufeff' + [head, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+}
+const blobToDataURL = b => new Promise(r => { if (!b) return r(null); const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+const dataURLToBlob = async u => u ? (await fetch(u)).blob() : null;
+async function exportJSON() {
+  toast('백업 파일을 만드는 중…');
+  const out = [];
+  for (const c of cards) out.push({ ...c, front: await blobToDataURL(c.front), back: await blobToDataURL(c.back) });
+  download(`my-bizcard-backup-${todayISO()}.json`, JSON.stringify({ app: 'my-bizcard', version: 1, exportedAt: new Date().toISOString(), cards: out }), 'application/json');
+}
+async function importJSON(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || !Array.isArray(data.cards)) throw new Error('My Bizcard 백업 파일이 아니에요');
+    let n = 0;
+    for (const raw of data.cards) {
+      const c = Object.assign(newCard(), raw, { front: await dataURLToBlob(raw.front), back: await dataURLToBlob(raw.back) });
+      c.f = { ...Parser.EMPTY, ...(raw.f || {}) };
+      if (c.status !== 'done' && c.status !== 'error') c.status = 'done';
+      const i = cards.findIndex(x => x.id === c.id);
+      if (i >= 0) cards[i] = c; else cards.push(c);
+      await DB.put(c); n++;
+    }
+    render(); toast(`${n}장의 명함을 불러왔어요`);
+  } catch (e) { toast('불러오기 실패: ' + e.message); }
+}
+
+/* ---------- settings dialog ---------- */
+const dlgSet = $('#dlgSettings');
+function openSettings() {
+  $('#langRow').innerHTML = LANGS.map(([k, v]) => `<label><input type="checkbox" value="${k}"${settings.langs.includes(k) ? ' checked' : ''}> ${v}</label>`).join('');
+  $('#langRow').querySelectorAll('input').forEach(i => i.onchange = () => {
+    settings.langs = $$('#langRow input:checked').map(x => x.value);
+    if (!settings.langs.length) { settings.langs = ['eng']; i.checked = i.value === 'eng'; openSettings(); }
+    saveSettings();
+  });
+  $('#setRotate').checked = settings.autoRotate;
+  if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(s => {
+    $('#storeInfo').textContent = `명함 ${cards.length}장 · 약 ${(s.usage / 1048576).toFixed(1)}MB 사용 중. 명함은 이 기기의 브라우저 안에만 저장돼요. 다른 기기로 옮기거나 보관하려면 내보내기 → 전체 백업을 이용하세요.`;
+  });
+  dlgSet.showModal();
+}
+$('#setRotate').onchange = e => { settings.autoRotate = e.target.checked; saveSettings(); };
+$('#btnWipe').onclick = async () => {
+  if (!cards.length) return;
+  if (!confirm(`명함 ${cards.length}장을 모두 삭제할까요? 되돌릴 수 없어요.\n먼저 전체 백업을 받아 두는 것을 권해요.`)) return;
+  await DB.clear(); cards = []; render(); dlgSet.close(); toast('모두 삭제했어요');
+};
+$$('dialog [data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+$$('dialog.small').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+
+/* ---------- events ---------- */
+$('#btnSettings').onclick = openSettings;
+$('#inFiles').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+$('#inCamera').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+$('#q').addEventListener('input', () => render());
+$('#sort').value = settings.sort;
+$('#sort').onchange = e => { settings.sort = e.target.value; saveSettings(); render(); };
+$('#fCompany').onchange = render; $('#fTag').onchange = render;
+$('#fStar').onclick = () => { filterStar = !filterStar; $('#fStar').classList.toggle('on', filterStar); render(); };
+$$('#viewSeg button').forEach(b => { b.classList.toggle('on', b.dataset.view === settings.view); b.onclick = () => { settings.view = b.dataset.view; saveSettings(); $$('#viewSeg button').forEach(x => x.classList.toggle('on', x === b)); render(); }; });
+$('#btnMore').onclick = e => { e.stopPropagation(); $('#moreMenu').hidden = !$('#moreMenu').hidden; };
+document.addEventListener('click', () => { $('#moreMenu').hidden = true; });
+$('#moreMenu').onclick = e => {
+  const k = e.target.dataset.exp; if (!k) return;
+  if (!cards.length && k !== 'import') { toast('내보낼 명함이 없어요'); return; }
+  if (k === 'vcf') download(`my-bizcard-${todayISO()}.vcf`, filtered().map(vcard).join('\r\n'), 'text/vcard');
+  else if (k === 'csv') download(`my-bizcard-${todayISO()}.csv`, csv(), 'text/csv');
+  else if (k === 'json') exportJSON();
+  else if (k === 'import') $('#inImport').click();
+};
+$('#inImport').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importJSON(f); };
+$('#grid').addEventListener('click', async e => {
+  const s = e.target.closest('[data-star]');
+  if (s) { e.stopPropagation(); const c = cards.find(x => x.id === s.dataset.star); c.starred = !c.starred; await DB.put(c); render(); return; }
+  const m = e.target.closest('[data-qm]');
+  if (m) { e.stopPropagation(); openQuickMemo(m.dataset.qm); return; }
+  const card = e.target.closest('.bc'); if (card) openDetail(card.dataset.id);
+});
+
+// drag & drop + paste
+const drop = $('#drop'), veil = $('#veil'); let dragDepth = 0;
+const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+window.addEventListener('dragenter', e => { if (!hasFiles(e) || dlg.open) return; dragDepth++; veil.classList.add('on'); drop.classList.add('over'); });
+window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) { veil.classList.remove('on'); drop.classList.remove('over'); } });
+window.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener('drop', e => {
+  if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; veil.classList.remove('on'); drop.classList.remove('over');
+  if (dlg.open && cur) {
+    const f = e.dataTransfer.files[0];
+    if (f && confirm('이 이미지를 뒷면으로 추가할까요?')) { const dt = new DataTransfer(); dt.items.add(f); $('#inBack').files = dt.files; $('#inBack').dispatchEvent(new Event('change')); }
+    return;
+  }
+  addFiles(e.dataTransfer.files);
+});
+document.addEventListener('paste', e => {
+  if (dlg.open || dlgMemo.open) return;
+  const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+  const files = [...(e.clipboardData?.items || [])].filter(i => i.kind === 'file' && i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
+  if (files.length) { e.preventDefault(); addFiles(files); }
+});
+
+/* ---------- boot ---------- */
+(async () => {
+  try {
+    await DB.open();
+    cards = (await DB.all()).map(c => Object.assign(newCard(), c, { f: { ...Parser.EMPTY, ...(c.f || {}) } }));
+    cards.forEach(c => { if (c.status === 'pending' || c.status === 'ocr') enqueue(ocrJob(c, { rotate: settings.autoRotate, rotateBack: settings.autoRotate, mode: 'overwrite' })); });
+    render();
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  } catch (e) {
+    console.error(e);
+    const mem = new Map();
+    DB.all = async () => [...mem.values()]; DB.put = async c => { mem.set(c.id, c); }; DB.del = async id => { mem.delete(id); }; DB.clear = async () => mem.clear();
+    render();
+    toast('이 창에서는 저장소를 쓸 수 없어 임시 모드로 동작해요. 창을 닫으면 사라지니 내보내기로 백업하세요.', 7000);
+  }
+})();
+})();
+</script>
+</body>
+</html>
