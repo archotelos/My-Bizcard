@@ -83,7 +83,17 @@ a{color:var(--accent)}
 .count{color:var(--muted);font-size:13px;margin:4px 0 12px}
 
 /* grid */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:28px}
+.grid.portrait{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.grid.portrait .bc-img{aspect-ratio:55/91}
+.grp-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:6px 0 10px;color:var(--muted)}
+.grp-h .ori{display:inline-block;border:2px solid currentColor;border-radius:3px;opacity:.7}
+.grp-h .ori.l{width:20px;height:13px}.grp-h .ori.p{width:13px;height:20px}
+.grp-h b{color:var(--ink);font-weight:700}
+.bc-noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,var(--surface2),var(--accent-soft));color:var(--muted);padding:10px;text-align:center}
+.bc-noimg span{font-size:30px;font-weight:800;color:var(--accent);line-height:1}
+.bc-noimg small{font-size:11px}
+#grid{padding-bottom:40px}
 .bc{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;display:flex;flex-direction:column}
 .bc:hover{transform:translateY(-2px)}
 .bc-img{aspect-ratio:91/55;background:var(--surface2);position:relative;overflow:hidden}
@@ -107,6 +117,8 @@ a{color:var(--accent)}
 .grid.list .bc-body{flex:1}
 .grid.list .bc .star,.grid.list .bc .qmemo{top:50%;transform:translateY(-50%)}
 .grid.list .bc-body{padding-right:96px}
+.grid.list.portrait{grid-template-columns:1fr}
+.grid.list.portrait .bc-img{width:74px}
 .empty{text-align:center;color:var(--muted);padding:40px 16px 80px}
 .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
 
@@ -219,11 +231,12 @@ dialog.small{width:min(520px,94vw)}
     <div class="drop-inner">
       <div class="drop-text">
         <strong>명함 사진을 끌어다 놓거나 붙여넣기 (Ctrl+V)</strong>
-        <span>여러 장을 한 번에 고르면 차례로 인식해 등록해요. 옆으로 누운 사진도 자동으로 바로 세워요.</span>
+        <span>여러 장을 한 번에 고르면 차례로 인식해 등록해요. 옆으로 누운 사진도 자동으로 바로 세우고, 가로형·세로형 명함으로 나눠 정리해요. 엑셀 연락처 목록도 불러올 수 있어요.</span>
       </div>
       <div class="drop-btns">
         <label class="btn primary">📷 촬영<input type="file" accept="image/*" capture="environment" id="inCamera" hidden></label>
         <label class="btn">🖼 파일 선택<input type="file" accept="image/*" multiple id="inFiles" hidden></label>
+        <label class="btn" title="엑셀(.xlsx .xls)이나 CSV로 정리된 연락처 목록을 불러와요">📊 엑셀 불러오기<input type="file" accept=".xlsx,.xls,.csv,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" id="inSheet" hidden></label>
       </div>
       <label class="switch"><input type="checkbox" id="pairMode"><span>여러 장 올릴 때 <b>2장씩 앞면·뒷면</b>으로 묶기 (1번째=앞면, 2번째=뒷면 …)</span></label>
     </div>
@@ -242,13 +255,18 @@ dialog.small{width:min(520px,94vw)}
     </select>
     <select id="fCompany" aria-label="회사"><option value="">모든 회사</option></select>
     <select id="fTag" aria-label="태그"><option value="">모든 태그</option></select>
+    <select id="fOrient" aria-label="명함 방향"><option value="">모든 방향</option><option value="landscape">가로형만</option><option value="portrait">세로형만</option></select>
     <button class="chip-toggle" id="fStar">★ 즐겨찾기</button>
     <div class="seg" id="viewSeg"><button data-view="grid" class="on">격자</button><button data-view="list">목록</button></div>
     <div class="menu">
-      <button class="btn" id="btnMore">내보내기 ▾</button>
+      <button class="btn" id="btnMore">가져오기·내보내기 ▾</button>
       <div class="menu-pop" id="moreMenu" hidden>
-        <button data-exp="vcf">전체 연락처 저장 (vCard .vcf)</button>
-        <button data-exp="csv">엑셀용 CSV</button>
+        <button data-exp="sheetIn">📊 엑셀·CSV 불러오기</button>
+        <button data-exp="template">엑셀 양식 내려받기 (빈 파일)</button>
+        <hr>
+        <button data-exp="xlsx">엑셀 파일로 저장 (.xlsx)</button>
+        <button data-exp="csv">CSV로 저장</button>
+        <button data-exp="vcf">휴대폰 연락처로 저장 (vCard .vcf)</button>
         <hr>
         <button data-exp="json">전체 백업 (JSON, 이미지 포함)</button>
         <button data-exp="import">백업 불러오기</button>
@@ -256,7 +274,7 @@ dialog.small{width:min(520px,94vw)}
     </div>
   </section>
   <p class="count" id="count"></p>
-  <section class="grid" id="grid"></section>
+  <section class="cards" id="grid"></section>
   <div class="empty" id="empty" hidden><b>아직 등록된 명함이 없어요</b>위에서 명함 사진을 올려 보세요.</div>
 </div>
 
@@ -348,6 +366,7 @@ const Parser = (() => {
     s = s.replace(/\s*@\s*/g, '@');
     s = s.replace(/([A-Za-z0-9])\s*\.\s+(?=(?:com|co|jp|kr|net|org|ne|or|ac|go)\b)/gi, '$1.');
     s = s.replace(/株\s*式\s*会\s*社/g, '株式会社');
+    s = s.replace(/[(（]\s*(주|株|有|유|사|재|学|財|社)\s*[)）]\s*/g, '($1)').replace(/[\u119e\u318d]/g, '·').replace(/주\s*식\s*회\s*사/g, '주식회사');
     s = joinSingleCJK(s);
     if (/[都道府県市区町村丁目番号]/.test(s) && /\d/.test(s)) s = s.replace(/(\d)\.(\d{1,3}-\d)/g, '$1-$2').replace(/(\d-\d{1,3})\.(\d{1,3})(?!\d)/g, '$1-$2').replace(new RegExp('([' + K + '])\\s+(?=[' + K + '0-9])', 'g'), '$1');
     return s.trim();
@@ -387,6 +406,7 @@ const Parser = (() => {
           const label = str.slice(last, pos);
           let v = p.replace(/\s+/g, ' ').replace(/[-.\s]+$/, '').trim();
           const fix = v.match(/^\d{1,2}(0\d{1,3}-\d{3,4}-\d{4})$/); if (fix) v = fix[1];
+          const lead = v.match(/^\d[.:]\s+(\+?[\d(].*)$/); if (lead) v = lead[1];
           items.push({ type: phoneType(label, v), value: v });
           rest += label + ' '; last = pos + p.length;
         }
@@ -445,7 +465,7 @@ const Parser = (() => {
     return {};
   }
   function roleCJK(r) {
-    let toks = r.split(/[\s\/／,、]+/).filter(Boolean);
+    let toks = r.split(/[\s\/／,、·・]+/).filter(Boolean);
     {
       const roles = toks.map(t => { const tr = tokRole(t); return tr.split ? 'split' : tr.role || null; });
       const plainNameLike = t => /^[가-힣]{2,4}$/.test(t) || /^[\u3400-\u9fff]{1,4}$/.test(t) && toks.length <= 2;
@@ -631,7 +651,8 @@ const Parser = (() => {
       F.name = nameX.info.s; nameX.l.used = true; nameX.l.tags.push('name');
       const alt = primary.find(x => !x.l.used && x.info.fam !== nameX.info.fam && x.score >= 1.2)
         || (reHangul.test(nameX.info.s) && primary.find(x => !x.l.used && reHangul.test(x.info.s) && x.l.h >= nameX.l.h * 0.85 && KO_SURNAME.test(x.info.s)));
-      if (alt) { F.nameAlt = alt.info.s; alt.l.used = true; alt.l.tags.push('nameAlt'); }
+      if (alt && alt.info.s.replace(/\s/g, '') === F.name.replace(/\s/g, '')) { alt.l.used = true; alt.l.tags.push('name'); }
+      else if (alt) { F.nameAlt = alt.info.s; alt.l.used = true; alt.l.tags.push('nameAlt'); }
       const rd = reKanji.test(nameX.info.s) && scored.find(x => !x.l.used && x.info.type === 'kana' && x.l.h < nameX.l.h * 0.8);
       if (rd) { F.reading = rd.info.s; rd.l.used = true; rd.l.tags.push('reading'); }
     }
@@ -654,6 +675,8 @@ const Parser = (() => {
         }
       }
       if (pendingCo && !F.company) { setCompany(w, l); l.used = true; continue; }
+      const sqc = t => t.normalize('NFKC').toLowerCase().replace(/[\s()（）.,·・\-]/g, '');
+      if (sqc(w).length >= 3 && sqc(F.company + '|' + F.companyAlt).includes(sqc(w))) { l.used = true; l.tags.push('company'); continue; }
       extras.push(w); l.used = true; l.tags.push('extra');
     }
 
@@ -733,7 +756,7 @@ const progress = {};
 const newCard = () => ({
   id: uid(), createdAt: Date.now(), updatedAt: Date.now(), status: 'pending', starred: false,
   f: { ...Parser.EMPTY }, phones: [], emails: [], urls: [], tags: [],
-  metDate: todayISO(), metPlace: '', followUp: '', memos: [], ocr: null, front: null, back: null, thumb: ''
+  metDate: todayISO(), metPlace: '', followUp: '', memos: [], ocr: null, front: null, back: null, thumb: '', orient: ''
 });
 
 function toast(msg, ms = 2600) {
@@ -815,24 +838,33 @@ const ST = { 'loading tesseract core': '인식 엔진 불러오는 중', 'initia
 function scoreOri(data) {
   let s = 0;
   for (const w of (data.words || [])) {
-    const t = (w.text || '').trim();
-    if (w.confidence >= 72 && /[A-Za-z0-9@]{2,}/.test(t)) s += t.length * (w.confidence / 100);
+    const t = (w.text || '').replace(/[^\p{L}\p{N}@]/gu, ''); if (!t) continue;
+    const cjk = /[぀-ヿ㐀-鿿가-힯]/.test(t);
+    if (cjk ? w.confidence >= 75 : (t.length >= 2 && w.confidence >= 65)) s += t.length * (cjk ? 1.5 : 1) * (w.confidence / 100);
   }
   return s;
 }
+// Try all four rotations and keep the one where text reads upright best (works for portrait- and landscape-printed cards).
 async function detectRotation(img, card) {
   const w = img.naturalWidth, h = img.naturalHeight;
-  const cands = h > w * 1.08 ? [90, 270, 0] : (w > h * 1.08 ? [0, 180] : [0, 90, 180, 270]);
-  setProg(card, '사진 방향 확인 중', 0.05);
-  const ow = await OCR.oriWorker();
-  let best = cands[0], bs = -1;
-  for (const r of cands) {
-    const { data } = await ow.recognize(prepForOcr(drawRotated(img, r, 1100)));
-    const s = scoreOri(data);
-    if (s > bs) { bs = s; best = r; }
+  const cands = h > w * 1.08 ? [0, 90, 270, 180] : [0, 180, 90, 270];
+  setProg(card, '명함 방향 확인 중', 0.02);
+  const wk = await OCR.main();
+  const scores = {};
+  for (let i = 0; i < cands.length; i++) {
+    const r = cands[i];
+    const { data } = await wk.recognize(prepForOcr(drawRotated(img, r, 1000)));
+    scores[r] = scoreOri(data);
+    setProg(card, '명함 방향 확인 중', (i + 1) / cands.length);
+    // stop early when one direction is clearly readable and its opposite was already tried
+    const tried = Object.keys(scores).map(Number), best = tried.reduce((a, b) => scores[b] > scores[a] ? b : a, tried[0]);
+    const rest = tried.filter(x => x !== best).map(x => scores[x]);
+    if (tried.length >= 2 && scores[best] >= 40 && rest.every(x => x < scores[best] * 0.35) && tried.includes((best + 180) % 360)) break;
   }
-  return best;
+  if (window.__bizcardDebug) window.__bizcard.oriScores = (window.__bizcard.oriScores || []).concat([scores]);
+  return Object.keys(scores).map(Number).reduce((a, b) => scores[b] > scores[a] ? b : a, cands[0]);
 }
+const orientOf = (w, h) => h > w * 1.12 ? 'portrait' : 'landscape';
 const reCJKc = /[぀-ヿ㐀-鿿豈-﫿가-힯]/;
 const median = a => { const b = [...a].sort((x, y) => x - y); return b.length ? b[b.length >> 1] : 0; };
 function rawLines(data) {
@@ -1024,7 +1056,8 @@ async function rereadWeak(card, prep, segs) {
     const squash = t => t.replace(/\s+/g, '').replace(/[lI|1]/g, 'I').replace(/[—–]/g, '-').toLowerCase();
     best = full;
     if (alt && (!full || (alt.conf >= full.conf + 10 && !squash(full.text).includes(squash(alt.text))))) best = alt;
-    if (!best || !meaningful(best.text) || best.conf < 62) continue;
+    const supported = best === full && alt && alt.conf >= 80 && squash(full.text).includes(squash(alt.text));
+    if (!best || !meaningful(best.text) || best.conf < (supported ? 50 : 62)) continue;
     bb = best.bb;
     const cy = (bb.y0 + bb.y1) / 2;
     // drop weak fragments inside this region, insert in reading order
@@ -1055,6 +1088,7 @@ async function recognizeSide(card, side, rotate) {
     card[side] = await canvasToBlob(stored);
     if (side === 'front') card.thumb = makeThumb(stored);
   }
+  if (side === 'front') { const r90 = rot % 180 !== 0; card.orient = orientOf(r90 ? img.naturalHeight : img.naturalWidth, r90 ? img.naturalWidth : img.naturalHeight); }
   let base = drawRotated(img, rot, 2400);
   if (Math.max(base.width, base.height) < 1700) base = drawRotated(img, rot, 2400, 1700);
   const prep = prepForOcr(base);
@@ -1127,8 +1161,11 @@ function ocrJob(card, opts) {
   };
 }
 
+const isSheet = f => /\.(xlsx|xls|csv|ods)$/i.test(f.name) || /spreadsheet|ms-excel|text\/csv/.test(f.type);
 async function addFiles(fileList) {
-  const files = [...fileList].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp|gif|heic|heif)$/i.test(f.name));
+  const sheets = [...fileList].filter(isSheet);
+  for (const sf of sheets) await importSheet(sf);
+  const files = [...fileList].filter(f => !isSheet(f)).filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|bmp|gif|heic|heif)$/i.test(f.name));
   if (!files.length) return;
   const pair = $('#pairMode').checked && files.length > 1;
   const groups = [];
@@ -1139,7 +1176,7 @@ async function addFiles(fileList) {
     try {
       const card = newCard();
       const fc = drawRotated(await loadImage(fr), 0, 1800);
-      card.front = await canvasToBlob(fc); card.thumb = makeThumb(fc);
+      card.front = await canvasToBlob(fc); card.thumb = makeThumb(fc); card.orient = orientOf(fc.width, fc.height);
       if (bk) card.back = await canvasToBlob(drawRotated(await loadImage(bk), 0, 1800));
       cards.unshift(card); await DB.put(card);
       enqueue(ocrJob(card, { rotate: settings.autoRotate, rotateBack: settings.autoRotate, mode: 'overwrite' }));
@@ -1157,8 +1194,8 @@ const searchText = c => [c.f.name, c.f.nameAlt, c.f.reading, c.f.company, c.f.co
 let filterStar = false;
 function filtered() {
   const q = $('#q').value.trim().toLowerCase();
-  const co = $('#fCompany').value, tg = $('#fTag').value;
-  let list = cards.filter(c => (!filterStar || c.starred) && (!co || (c.f.company || '(회사 미입력)') === co) && (!tg || c.tags.includes(tg)) && (!q || q.split(/\s+/).every(w => searchText(c).includes(w))));
+  const co = $('#fCompany').value, tg = $('#fTag').value, fo = $('#fOrient').value;
+  let list = cards.filter(c => (!filterStar || c.starred) && (!fo || (c.orient || 'landscape') === fo) && (!co || (c.f.company || '(회사 미입력)') === co) && (!tg || c.tags.includes(tg)) && (!q || q.split(/\s+/).every(w => searchText(c).includes(w))));
   const s = settings.sort, coll = new Intl.Collator('ko');
   list.sort((a, b) => {
     if (s === 'name') return coll.compare(a.f.name || a.f.nameAlt || '힣', b.f.name || b.f.nameAlt || '힣');
@@ -1182,7 +1219,7 @@ function cardHTML(c) {
   const st = c.status === 'pending' || c.status === 'ocr' ? '<span class="bc-badge">인식 중…</span>' : c.status === 'error' ? '<span class="bc-badge">인식 실패 · 직접 입력</span>' : '';
   const due = c.followUp && c.followUp <= todayISO() ? `<span class="pill due">연락 ${esc(c.followUp.slice(5).replace('-', '/'))}</span>` : c.followUp ? `<span class="pill">연락 ${esc(c.followUp.slice(5).replace('-', '/'))}</span>` : '';
   return `<article class="bc" data-id="${c.id}">
-    <div class="bc-img">${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">` : ''}${st}</div>
+    <div class="bc-img">${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">` : `<div class="bc-noimg"><span>${esc([...(c.f.name || c.f.nameAlt || c.f.company || '?')][0])}</span><small>사진 없음</small></div>`}${st}</div>
     <div class="bc-body">
       <div class="bc-name">${esc(c.f.name || c.f.nameAlt || '(이름 없음)')}${c.f.name && c.f.nameAlt ? `<span class="bc-alt">${esc(c.f.nameAlt)}</span>` : ''}</div>
       <div class="bc-co">${esc(c.f.company || c.f.companyAlt || '')}</div>
@@ -1196,9 +1233,12 @@ function cardHTML(c) {
 function render() {
   fillFilters();
   const list = filtered();
-  const g = $('#grid');
-  g.className = 'grid' + (settings.view === 'list' ? ' list' : '');
-  g.innerHTML = list.map(cardHTML).join('');
+  const g = $('#grid'), lv = settings.view === 'list' ? ' list' : '';
+  const land = list.filter(c => (c.orient || 'landscape') !== 'portrait'), port = list.filter(c => c.orient === 'portrait');
+  const head = (cls, label, n) => `<h3 class="grp-h"><span class="ori ${cls}"></span><b>${label}</b> ${n}장</h3>`;
+  g.innerHTML = (land.length && port.length)
+    ? head('l', '가로형 명함', land.length) + `<div class="grid${lv}">${land.map(cardHTML).join('')}</div>` + head('p', '세로형 명함', port.length) + `<div class="grid portrait${lv}">${port.map(cardHTML).join('')}</div>`
+    : `<div class="grid${port.length ? ' portrait' : ''}${lv}">${list.map(cardHTML).join('')}</div>`;
   $('#empty').hidden = cards.length > 0;
   $('#count').textContent = cards.length ? (list.length === cards.length ? `명함 ${cards.length}장` : `명함 ${cards.length}장 중 ${list.length}장`) : '';
   renderQueue();
@@ -1208,7 +1248,7 @@ function renderQueue() {
   const q = $('#queue'); q.hidden = !pend.length;
   q.innerHTML = pend.map((c, i) => {
     const p = progress[c.id];
-    return `<div class="q-item"><img src="${c.thumb}" alt=""><div class="q-t"><b>${c.status === 'ocr' ? '인식 중' : `대기 중 (${i + 1}/${pend.length})`}</b>${esc(p ? p.text : '차례를 기다리는 중')}<div class="bar"><i style="width:${p && p.pct != null ? Math.round(p.pct * 100) : 0}%"></i></div></div></div>`;
+    return `<div class="q-item"><img src="${c.thumb || ''}" alt=""><div class="q-t"><b>${c.status === 'ocr' ? '인식 중' : `대기 중 (${i + 1}/${pend.length})`}</b>${esc(p ? p.text : '차례를 기다리는 중')}<div class="bar"><i style="width:${p && p.pct != null ? Math.round(p.pct * 100) : 0}%"></i></div></div></div>`;
   }).join('');
 }
 
@@ -1323,7 +1363,10 @@ function renderMedia() {
   if (blob) { const u = URL.createObjectURL(blob); urls.push(u); box.innerHTML = `<img src="${u}" alt="${curSide === 'front' ? '앞면' : '뒷면'}">`; box.querySelector('img').onclick = () => zoom(u); }
   else box.innerHTML = `<div class="ph">${curSide === 'back' ? '뒷면 이미지가 없어요.<br>아래 버튼으로 추가하세요.' : '이미지 없음'}</div>`;
   const rot = blob ? `<button class="btn sm" data-rot="-90" title="왼쪽으로 회전">⟲ 회전</button><button class="btn sm" data-rot="90" title="오른쪽으로 회전">⟳ 회전</button>` : '';
-  if (curSide === 'front') {
+  if (curSide === 'front' && !blob) {
+    box.innerHTML = '<div class="ph">명함 사진이 없어요.<br>엑셀에서 불러온 연락처예요. 사진을 추가하면 빈 칸을 채워 줘요.</div>';
+    act.innerHTML = `<button class="btn sm primary" data-act="replace">+ 명함 사진 추가</button>`;
+  } else if (curSide === 'front') {
     act.innerHTML = rot + `<button class="btn sm" data-act="reocr">다시 인식</button><button class="btn sm" data-act="fillocr" title="비어 있는 칸만 채워요">빈 칸만 채우기</button><button class="btn sm" data-act="replace">사진 바꾸기</button>`;
   } else {
     act.innerHTML = blob
@@ -1340,7 +1383,7 @@ async function rotateSide(side, deg) {
   const img = await loadImage(cur[side]);
   const c = drawRotated(img, deg, 1800);
   cur[side] = await canvasToBlob(c);
-  if (side === 'front') cur.thumb = makeThumb(c);
+  if (side === 'front') { cur.thumb = makeThumb(c); cur.orient = orientOf(c.width, c.height); }
   renderMedia(); scheduleSave();
   if (side === 'front') toast('방향을 바꿨어요. 필요하면 "다시 인식"을 눌러 주세요');
 }
@@ -1481,9 +1524,11 @@ $('#inReplace').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f || !cur) return;
   try {
     const c = drawRotated(await loadImage(f), 0, 1800);
-    cur.front = await canvasToBlob(c); cur.thumb = makeThumb(c);
+    const hadImage = !!cur.front, hasData = !!(cur.f.name || cur.f.company || cur.phones.length || cur.emails.length);
+    cur.front = await canvasToBlob(c); cur.thumb = makeThumb(c); cur.orient = orientOf(c.width, c.height);
     await flushSave(); renderMedia();
-    if (confirm('새 사진으로 다시 인식할까요?')) { cur.status = 'pending'; render(); enqueue(ocrJob(cur, { rotate: settings.autoRotate, mode: 'overwrite' })); }
+    const fill = !hadImage && hasData;
+    if (confirm(fill ? '사진을 인식해서 비어 있는 칸만 채울까요? (입력된 내용은 그대로 둬요)' : '새 사진으로 다시 인식할까요?')) { cur.status = 'pending'; render(); enqueue(ocrJob(cur, { rotate: settings.autoRotate, mode: fill ? 'fill' : 'overwrite' })); }
   } catch (err) { toast(err.message); }
 };
 
@@ -1522,14 +1567,172 @@ function vcard(c) {
   L.push('END:VCARD');
   return L.join('\r\n');
 }
+const TABLE_HEAD = ['이름', '다른 표기', '읽는 법', '회사', '회사(다른 표기)', '부서', '직함', '휴대폰', '전화', '팩스', '이메일', '웹사이트', '우편번호', '주소', '태그', '만난 날', '장소·행사', '다음 연락일', '메모', '기타', '명함 방향', '등록일'];
+function tableRows(list) {
+  const ph = (c, t) => c.phones.filter(p => p.type === t || (t === 'tel' && p.type === 'other')).map(p => p.value).join(' / ');
+  return list.map(c => [c.f.name, c.f.nameAlt, c.f.reading, c.f.company, c.f.companyAlt, c.f.department, c.f.title, ph(c, 'mobile'), ph(c, 'tel'), ph(c, 'fax'),
+    c.emails.join(' / '), c.urls.join(' / '), c.f.postal, c.f.address, c.tags.join(' '), c.metDate, c.metPlace, c.followUp,
+    c.memos.map(m => `[${fmtDT(m.at)}] ${m.text}`).join('\n'), c.f.extra, c.front ? (c.orient === 'portrait' ? '세로형' : '가로형') : '', fmtDT(c.createdAt)]);
+}
 function csv() {
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const ph = (c, t) => c.phones.filter(p => p.type === t).map(p => p.value).join(' / ');
-  const head = ['이름', '다른 표기', '읽는 법', '회사', '회사(다른 표기)', '부서', '직함', '휴대폰', '전화', '팩스', '이메일', '웹사이트', '우편번호', '주소', '태그', '만난 날', '장소·행사', '다음 연락일', '메모', '기타', '등록일'];
-  const rows = filtered().map(c => [c.f.name, c.f.nameAlt, c.f.reading, c.f.company, c.f.companyAlt, c.f.department, c.f.title, ph(c, 'mobile'), ph(c, 'tel'), ph(c, 'fax'),
-    c.emails.join(' / '), c.urls.join(' / '), c.f.postal, c.f.address, c.tags.join(' '), c.metDate, c.metPlace, c.followUp,
-    c.memos.map(m => `[${fmtDT(m.at)}] ${m.text}`).join('\n'), c.f.extra, fmtDT(c.createdAt)]);
-  return '\ufeff' + [head, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+  return '\ufeff' + [TABLE_HEAD, ...tableRows(filtered())].map(r => r.map(q).join(',')).join('\r\n');
+}
+
+/* ---------- Excel (SheetJS, loaded on demand) ---------- */
+let xlsxLoading = null;
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxLoading) xlsxLoading = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    sc.onload = () => window.XLSX ? res(window.XLSX) : rej(new Error('엑셀 모듈을 불러오지 못했어요'));
+    sc.onerror = () => { xlsxLoading = null; rej(new Error('엑셀 모듈을 불러오지 못했어요. 인터넷 연결을 확인하세요.')); };
+    document.head.appendChild(sc);
+  });
+  return xlsxLoading;
+}
+function sheetFile(X, aoa, name) {
+  const ws = X.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = TABLE_HEAD.map((h, i) => ({ wch: [12, 16, 12, 22, 22, 22, 16, 16, 16, 16, 28, 26, 10, 40, 14, 11, 16, 11, 50, 24, 8, 18][i] || 14 }));
+  ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(0, aoa.length - 1), c: TABLE_HEAD.length - 1 } }) };
+  const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, '명함');
+  X.writeFile(wb, name, { compression: true });
+}
+async function exportXLSX() {
+  try { const X = await loadXLSX(); sheetFile(X, [TABLE_HEAD, ...tableRows(filtered())], `my-bizcard-${todayISO()}.xlsx`); }
+  catch (e) { toast(e.message); }
+}
+async function exportTemplate() {
+  try { const X = await loadXLSX(); sheetFile(X, [TABLE_HEAD], 'my-bizcard-template.xlsx'); toast('양식에 맞춰 적은 뒤 "엑셀 불러오기"로 올려 주세요'); }
+  catch (e) { toast(e.message); }
+}
+const COLS = {
+  name: ['이름', '성명', '성함', 'name', 'fullname', '氏名', '名前', 'お名前', '担当者', '担当者名'],
+  nameAlt: ['다른표기', '영문이름', '영문명', '영문성명', 'englishname', 'nameen', 'ローマ字', '英語名', '別表記', '英字氏名'],
+  reading: ['읽는법', '후리가나', 'ふりがな', 'フリガナ', 'よみがな', 'ヨミガナ', '読み', 'reading', 'furigana', 'kana'],
+  company: ['회사', '회사명', '상호', '기관', '기관명', '소속', '会社', '会社名', '社名', '企業名', 'company', 'companyname', 'organization', 'org'],
+  companyAlt: ['회사다른표기', '영문회사명', '회사영문', 'companyen', '会社名英語', '英文社名', '会社名英字'],
+  department: ['부서', '부서명', '部署', '部署名', '所属', '所属部署', 'department', 'dept', 'division'],
+  title: ['직함', '직책', '직위', '役職', '肩書', '肩書き', 'title', 'position', 'jobtitle'],
+  mobile: ['휴대폰', '휴대전화', '핸드폰', '휴대폰번호', '휴대전화번호', '携帯', '携帯電話', '携帯番号', 'mobile', 'mobilephone', 'cell', 'cellphone'],
+  tel: ['전화', '전화번호', '회사전화', '사무실전화', '電話', '電話番号', '代表電話', 'tel', 'phone', 'telephone', 'officephone', '直通'],
+  fax: ['팩스', '팩스번호', 'fax', 'faxnumber', 'ファックス', 'ファクス', 'fax番号'],
+  email: ['이메일', '메일', '이메일주소', '전자우편', 'email', 'e메일', 'mail', 'emailaddress', 'メール', 'メールアドレス'],
+  url: ['웹사이트', '홈페이지', '웹', 'url', 'web', 'website', 'homepage', 'ホームページ', 'ウェブサイト'],
+  postal: ['우편번호', '郵便番号', '〒', 'zip', 'zipcode', 'postal', 'postalcode', 'postcode'],
+  address: ['주소', '회사주소', '住所', '所在地', 'address'],
+  tags: ['태그', '분류', '그룹', 'tags', 'tag', 'category', 'group', 'タグ', '分類', 'グループ'],
+  metDate: ['만난날', '명함교환일', '교환일', '만난날짜', '名刺交換日', '交換日', 'metdate', 'datemet'],
+  metPlace: ['장소행사', '만난장소', '장소', '행사', '場所', 'イベント', 'place', 'event'],
+  followUp: ['다음연락일', '연락예정일', 'followup', '次回連絡日'],
+  memo: ['메모', '비고', 'memo', 'memos', 'notes', 'note', 'メモ', '備考'],
+  extra: ['기타', 'その他', 'other', 'extra'],
+  orient: ['명함방향', '방향', 'orientation'],
+};
+const normHead = h => String(h || '').normalize('NFKC').toLowerCase().replace(/[\s()\[\]（）・·_\-.:/]/g, '');
+function mapHeader(row) {
+  const map = {};
+  row.forEach((h, i) => {
+    const n = normHead(h); if (!n) return;
+    let key = Object.keys(COLS).find(k => COLS[k].some(a => normHead(a) === n));
+    if (!key) {
+      let bestLen = 0;
+      for (const k of Object.keys(COLS)) for (const a of COLS[k]) { const na = normHead(a); if (na.length >= 2 && n.includes(na) && na.length > bestLen) { bestLen = na.length; key = k; } }
+    }
+    if (key && map[key] == null) map[key] = i;
+  });
+  return map;
+}
+function toISODate(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${pad(v.getMonth() + 1)}-${pad(v.getDate())}`;
+  const s = String(v).trim();
+  let m = s.match(/(\d{4})\s*[-./年]\s*(\d{1,2})\s*[-./月]\s*(\d{1,2})/);
+  if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) { const y = m[3].length === 2 ? 2000 + +m[3] : +m[3]; return `${y}-${pad(+m[1])}-${pad(+m[2])}`; }
+  return '';
+}
+const splitMulti = v => String(v ?? '').split(/\s*(?:\n|\/|;|,|、)\s*/).map(x => x.trim()).filter(Boolean);
+function parseMemos(v) {
+  const t = String(v ?? '').trim(); if (!t) return [];
+  const re = /\[(\d{4})\.(\d{2})\.(\d{2})[^\]]*?(\d{2}):(\d{2})\]\s*/g;
+  if (!re.test(t)) return [{ id: uid(), at: Date.now(), text: t }];
+  const out = []; const parts = t.split(/(?=\[\d{4}\.\d{2}\.\d{2}[^\]]*\])/);
+  for (const p of parts) {
+    const m = p.match(/^\[(\d{4})\.(\d{2})\.(\d{2})[^\]]*?(\d{2}):(\d{2})\]\s*([\s\S]*)$/);
+    if (m) out.push({ id: uid(), at: new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime(), text: m[6].trim() });
+    else if (p.trim()) out.push({ id: uid(), at: Date.now(), text: p.trim() });
+  }
+  return out.filter(m => m.text);
+}
+function rowToCard(row, map) {
+  const g = k => map[k] == null ? '' : row[map[k]];
+  const str = k => String(g(k) ?? '').trim();
+  const c = newCard(); c.status = 'done'; c.metDate = '';
+  for (const k of ['name', 'nameAlt', 'reading', 'company', 'companyAlt', 'department', 'title', 'postal', 'address', 'extra']) c.f[k] = str(k);
+  [['mobile', 'mobile'], ['tel', 'tel'], ['fax', 'fax']].forEach(([k, t]) => splitMulti(g(k)).forEach(v => c.phones.push({ type: t, value: v })));
+  c.emails = splitMulti(g('email')).filter(e => e.includes('@'));
+  c.urls = splitMulti(g('url'));
+  c.tags = String(g('tags') ?? '').split(/[\s,#、]+/).map(x => x.trim()).filter(Boolean);
+  c.metDate = toISODate(g('metDate')); c.metPlace = str('metPlace'); c.followUp = toISODate(g('followUp'));
+  c.memos = parseMemos(g('memo'));
+  const empty = !(c.f.name || c.f.nameAlt || c.f.company || c.phones.length || c.emails.length);
+  return empty ? null : c;
+}
+function findDup(c) {
+  const em = new Set(c.emails.map(e => e.toLowerCase()));
+  const key = x => (x.f.name || x.f.nameAlt || '').replace(/\s/g, '').toLowerCase() + '|' + (x.f.company || '').replace(/\s/g, '').toLowerCase();
+  return cards.find(x => x.emails.some(e => em.has(e.toLowerCase())) || ((c.f.name || c.f.nameAlt) && key(x) === key(c)));
+}
+function mergeInto(t, c) {
+  for (const k of Object.keys(c.f)) if (c.f[k] && !t.f[k]) t.f[k] = c.f[k];
+  mergeList(t.phones, c.phones, p => Parser.digits(p.value));
+  mergeList(t.emails, c.emails, e => e.toLowerCase());
+  mergeList(t.urls, c.urls, u => u.toLowerCase());
+  c.tags.forEach(x => { if (!t.tags.includes(x)) t.tags.push(x); });
+  c.memos.forEach(m => { if (!t.memos.some(x => x.text === m.text)) t.memos.push(m); });
+  t.memos.sort((a, b) => b.at - a.at);
+  ['metDate', 'metPlace', 'followUp'].forEach(k => { if (c[k] && !t[k]) t[k] = c[k]; });
+  t.updatedAt = Date.now();
+}
+async function importSheet(file) {
+  try {
+    toast('엑셀 파일을 읽는 중…');
+    const X = await loadXLSX();
+    const buf = await file.arrayBuffer();
+    let wb;
+    if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
+      let text = new TextDecoder('utf-8').decode(buf);
+      if (text.includes('\ufffd')) { for (const enc of ['euc-kr', 'shift_jis']) { try { const t2 = new TextDecoder(enc).decode(buf); if (!t2.includes('\ufffd')) { text = t2; break; } } catch {} } }
+      wb = X.read(text.replace(/^\ufeff/, ''), { type: 'string', cellDates: true });
+    } else wb = X.read(buf, { type: 'array', cellDates: true });
+    let best = null;
+    for (const sn of wb.SheetNames) {
+      const rows = X.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: true });
+      for (let i = 0; i < Math.min(8, rows.length); i++) {
+        const map = mapHeader(rows[i]);
+        const n = Object.keys(map).length;
+        if (n >= 2 && (map.name != null || map.company != null || map.email != null) && (!best || n > best.n)) best = { rows, i, map, n };
+      }
+    }
+    if (!best) throw new Error('열 이름(이름, 회사, 전화 등)을 찾지 못했어요. "엑셀 양식 내려받기"의 첫 줄처럼 맞춰 주세요');
+    const incoming = best.rows.slice(best.i + 1).map(r => rowToCard(r, best.map)).filter(Boolean);
+    if (!incoming.length) throw new Error('불러올 연락처가 없어요');
+    const dups = incoming.filter(findDup).length;
+    const cols = Object.keys(best.map).map(k => ({ name: '이름', nameAlt: '다른 표기', reading: '읽는 법', company: '회사', companyAlt: '회사(다른 표기)', department: '부서', title: '직함', mobile: '휴대폰', tel: '전화', fax: '팩스', email: '이메일', url: '웹', postal: '우편번호', address: '주소', tags: '태그', metDate: '만난 날', metPlace: '장소', followUp: '다음 연락일', memo: '메모', extra: '기타', orient: '방향' }[k])).join(', ');
+    if (!confirm(`"${file.name}"에서 연락처 ${incoming.length}명을 찾았어요.\n\n알아본 열: ${cols}\n새로 추가: ${incoming.length - dups}명 · 이미 있는 명함과 합치기: ${dups}명\n\n불러올까요?`)) return;
+    let added = 0, merged = 0; const fresh = [];
+    const base = Date.now();
+    for (const c of incoming) {
+      const d = findDup(c);
+      if (d) { mergeInto(d, c); await DB.put(d); merged++; }
+      else { c.createdAt = base - fresh.length; fresh.push(c); await DB.put(c); added++; }
+    }
+    cards = [...fresh, ...cards];
+    render(); toast(`엑셀에서 ${added}명 추가${merged ? `, ${merged}명 합침` : ''}`);
+  } catch (e) { console.error(e); toast('엑셀 불러오기 실패: ' + e.message, 5000); }
 }
 const blobToDataURL = b => new Promise(r => { if (!b) return r(null); const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
 const dataURLToBlob = async u => u ? (await fetch(u)).blob() : null;
@@ -1594,13 +1797,18 @@ $('#btnMore').onclick = e => { e.stopPropagation(); $('#moreMenu').hidden = !$('
 document.addEventListener('click', () => { $('#moreMenu').hidden = true; });
 $('#moreMenu').onclick = e => {
   const k = e.target.dataset.exp; if (!k) return;
+  if (k === 'sheetIn') { $('#inSheet').click(); return; }
+  if (k === 'template') { exportTemplate(); return; }
   if (!cards.length && k !== 'import') { toast('내보낼 명함이 없어요'); return; }
-  if (k === 'vcf') download(`my-bizcard-${todayISO()}.vcf`, filtered().map(vcard).join('\r\n'), 'text/vcard');
+  if (k === 'xlsx') exportXLSX();
+  else if (k === 'vcf') download(`my-bizcard-${todayISO()}.vcf`, filtered().map(vcard).join('\r\n'), 'text/vcard');
   else if (k === 'csv') download(`my-bizcard-${todayISO()}.csv`, csv(), 'text/csv');
   else if (k === 'json') exportJSON();
   else if (k === 'import') $('#inImport').click();
 };
 $('#inImport').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importJSON(f); };
+$('#inSheet').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importSheet(f); };
+$('#fOrient').onchange = render;
 $('#grid').addEventListener('click', async e => {
   const s = e.target.closest('[data-star]');
   if (s) { e.stopPropagation(); const c = cards.find(x => x.id === s.dataset.star); c.starred = !c.starred; await DB.put(c); render(); return; }
@@ -1636,6 +1844,7 @@ document.addEventListener('paste', e => {
   try {
     await DB.open();
     cards = (await DB.all()).map(c => Object.assign(newCard(), c, { f: { ...Parser.EMPTY, ...(c.f || {}) } }));
+    cards.filter(c => !c.orient && c.thumb).forEach(c => { const im = new Image(); im.onload = () => { c.orient = orientOf(im.width, im.height); DB.put(c); render(); }; im.src = c.thumb; });
     cards.forEach(c => { if (c.status === 'pending' || c.status === 'ocr') enqueue(ocrJob(c, { rotate: settings.autoRotate, rotateBack: settings.autoRotate, mode: 'overwrite' })); });
     render();
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
